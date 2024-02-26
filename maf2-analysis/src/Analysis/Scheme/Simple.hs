@@ -14,6 +14,9 @@ import Data.Maybe
 import Text.Printf
 import Prelude hiding (exp)
 
+import Data.Map
+import Data.Set
+
 -- | The ModF instantation used in this analysis
 type M = ModF VariableAdr V K AdrDep
 
@@ -68,6 +71,6 @@ instance SchemeAlloc K VariableAdr V AdrDep where
    allocStr = PointerAdr
 
 -- | Expose a function to run the analysis
-runAnalysis :: String -> DSto K V
+runAnalysis :: String -> (DSto K V,  Map Ide (Set Exp))
 runAnalysis program = analyzeProgram @V exp [] []
    where exp = fromJust $ parseString program

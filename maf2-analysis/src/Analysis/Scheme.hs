@@ -27,6 +27,13 @@ import Analysis.Monad (EnvM(..))
 import Analysis.Scheme.Store
 import Control.Monad.DomainError (runMayEscape, DomainError, MonadEscape(..))
 
+
+import qualified Control.Monad.State as State
+import qualified Data.Map as Map
+import qualified Data.Set as Set
+import qualified Analysis.Monad as Monad
+import qualified Analysis.Scheme.Monad as SchemeMonad
+
 -----------------------------------------
 -- Shorthands
 -----------------------------------------
@@ -75,14 +82,14 @@ instance (SchemeAnalysisConstraints var v ctx dep) => ModX (ModF var v ctx dep) 
   -- A component is a closure + a context
   type Component (ModF var v ctx dep)  = (Exp, Env var v ctx dep, ctx, GT (var, v, dep))
   -- | Global store
-  type State (ModF var v ctx dep)      = DSto ctx v
+  type State (ModF var v ctx dep)      = (DSto ctx v, Map Ide (Set Exp))
   -- | Dependencies are tracked using SVar
   type Dep (ModF var v ctx dep)        = dep
   -- | The analysis of a single component runs the Scheme semantics
   -- on the body of that component
   type MM (ModF var v ctx dep)         = Identity
-  analyze (exp, env, ctx, _) store = 
-       let ((_, (spawns, registers, triggers)), sto) = (Semantics.eval exp >>= writeAdr (retAdr (exp, env, ctx, Ghost)))
+  analyze (exp, env, ctx, _) (store, t) = 
+       let (((_, (spawns, registers, triggers)), sto), t') = (Semantics.eval exp >>= writeAdr (retAdr (exp, env, ctx, Ghost)))
               & runEvalT
               & runMayEscape @_ @(Set DomainError)
               & runCallT @v @ctx
@@ -91,6 +98,7 @@ instance (SchemeAnalysisConstraints var v ctx dep) => ModX (ModF var v ctx dep) 
               & runStoreT @PaAdr (pairs   store)
               & runStoreT @VeAdr (vecs    store)
               & combineStores
+              & runAvailableExpressionsT t
               & runEnv env
               & runAlloc @PaAdr (allocPai @ctx)
               & runAlloc @VeAdr (allocVec @ctx)
@@ -98,7 +106,7 @@ instance (SchemeAnalysisConstraints var v ctx dep) => ModX (ModF var v ctx dep) 
               & runAlloc @VrAdr (allocVar @ctx)
               & runCtx  ctx
               & runIdentity
-       in return (sto, spawns, registers, triggers) 
+       in return ((sto, t'), spawns, registers, triggers) 
 
 -----------------------------------------
 -- Open recursion for evaluation
@@ -126,8 +134,8 @@ instance (MonadJoin m) => MonadJoin (BaseSchemeEvalT v m) where
 instance MonadTrans (BaseSchemeEvalT v) where
    lift = BaseSchemeEvalT
 
-instance (SchemeM (BaseSchemeEvalT v m) v, SchemeAnalysisConstraints var v ctx dep) => (Analysis.Monad.EvalM (BaseSchemeEvalT v m) v Exp) where
-   eval = Semantics.eval
+instance (SchemeM (BaseSchemeEvalT v m) v, AvailableExpressionsM (BaseSchemeEvalT v m), SchemeAnalysisConstraints var v ctx dep) => (Analysis.Monad.EvalM (BaseSchemeEvalT v m) v Exp) where
+   eval = availableEval
 
 
 runEvalT :: BaseSchemeEvalT v m a -> m a
@@ -213,6 +221,39 @@ runCallT :: forall v ctx m a c dep var . (Monad m, c ~ ModF var v ctx dep)
 runCallT (CallT m) = runModxT @c m
 
 -----------------------------------------
+-- Available Expressions analysis
+-----------------------------------------
+
+class AvailableExpressionsM m where
+   addAvailable :: Ide -> Exp -> m ()
+
+availableEval :: forall m v . (AvailableExpressionsM m, SchemeDomain v, SchemeM m v) => Exp -> m v
+availableEval (Let bds bdy _) = do
+   vlus <- mapM Monad.eval eps
+   mapM_ (uncurry addAvailable) bds
+   adrs <- mapM SchemeMonad.allocVar vrs
+   mapM_ (uncurry writeAdr) (zip adrs vlus)
+   withExtendedEnv (zip (map name vrs) adrs) (Monad.eval bdy)
+   where (vrs, eps) = unzip bds
+availableEval e = Semantics.eval e
+
+newtype AvailableExpressionsT m v = AvailableExpressionsT (State.StateT (Map Ide (Set Exp)) m v) 
+                                    deriving (Monad, Applicative, Functor, MonadLayer, State.MonadState (Map Ide (Set Exp)))
+
+instance {-# OVERLAPPING #-} (Monad m) => AvailableExpressionsM (AvailableExpressionsT m) where
+   addAvailable ide exp = State.modify (Map.insert ide (Set.singleton exp))
+
+instance (MonadLayer m, AvailableExpressionsM (Lower m)) => AvailableExpressionsM m where 
+   addAvailable ide exp = upperM $ addAvailable ide exp 
+
+instance (MonadJoin m) => MonadJoin (AvailableExpressionsT m) where
+   mzero = AvailableExpressionsT mzero
+   mjoin (AvailableExpressionsT ma) (AvailableExpressionsT mb) = AvailableExpressionsT $ mjoin ma mb
+
+runAvailableExpressionsT :: Map Ide (Set Exp) -> AvailableExpressionsT m a -> m (a, Map Ide (Set Exp))
+runAvailableExpressionsT t (AvailableExpressionsT m) = State.runStateT m t  
+
+-----------------------------------------
 -- Analysis
 -----------------------------------------
 
@@ -242,5 +283,5 @@ analyzeProgram :: forall v ctx wl dep var .
                -> wl       -- ^ the initial contents of the worklist, can be empty. This function will add the initial component to it. 
                -> ctx -- ^ context allocation function for a given expression (usually associated with a function call)
                -> State (ModF var v ctx dep)
-analyzeProgram exp initialWl initialCtx = runIdentity $ runModX initialWl' (analysisStore @v analysisEnvironment)
+analyzeProgram exp initialWl initialCtx = runIdentity $ runModX initialWl' (analysisStore @v analysisEnvironment, Map.empty)
   where initialWl' = add (exp, analysisEnvironment, initialCtx, Ghost) initialWl

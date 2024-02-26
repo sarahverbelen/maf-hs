@@ -57,5 +57,7 @@ options =
 main :: Options -> IO ()
 main (Options filename) = do
      contents <- readFile filename
-     putStrLn $ printSto (values (runAnalysis contents))
+     let (sto, available) = runAnalysis contents
+     putStrLn $ printSto (values sto)
+     print available
 
