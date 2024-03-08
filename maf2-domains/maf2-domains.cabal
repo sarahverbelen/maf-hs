@@ -90,6 +90,7 @@ library
       Lattice.ProductLattice
       Lattice.ReversePowerSetLattice
       Lattice.SetLattice
+      Lattice.SignLattice
       Lattice.TopLiftedLattice
       Lattice.UnitLattice
       Paths_maf2_domains
