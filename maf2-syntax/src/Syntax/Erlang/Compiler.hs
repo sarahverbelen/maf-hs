@@ -10,6 +10,7 @@ import qualified Syntax.Erlang.Parser as T
 
 import Control.Monad.Except
 import Control.Applicative (liftA2)
+import Control.Monad
 
 ------------------------------------------------------------
 -- Utility functions
