@@ -2,5 +2,8 @@ module Lib
     ( someFunc
     ) where
 
+import Dependency.Lattice
+import Lattice
+
 someFunc :: IO ()
-someFunc = putStrLn "someFunc"
+someFunc = putStrLn $ show $ refine ZeroOrNeg

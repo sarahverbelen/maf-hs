@@ -1,4 +1,4 @@
-module Dependency.Atoms where 
+module Dependency.Lattice where 
 
 import Domain
 import Lattice
