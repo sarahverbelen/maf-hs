@@ -24,12 +24,12 @@ class (JoinLattice v) => RefinableLattice v where
     refine :: v -> [v] 
 
 instance (Ord a, Show a, Enum a, Bounded a) => RefinableLattice (CP a) where 
-    refine Bottom = []
+    refine Bottom = [] -- [Bottom]
     refine (Constant _) = [Bottom]
     refine Top = [Constant i | i <- [minBound..]]
 
 instance RefinableLattice Sign where 
-    refine SBottom = []
+    refine SBottom = [] -- [SBottom]
     refine STop = [ZeroOrNeg, ZeroOrPos]    
     refine ZeroOrNeg = [Zero, Neg]
     refine ZeroOrPos = [Zero, Pos]

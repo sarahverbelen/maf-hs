@@ -1,9 +1,16 @@
-module Lib
-    ( someFunc
-    ) where
+module Lib(testCovering) where
 
-import Dependency.Lattice
-import Lattice
+import Data.Map hiding (map)
+import Lattice hiding (empty, insert)
+import Data.List (intercalate)
+import Interpreter.Scheme
+import Dependency.State
 
-someFunc :: IO ()
-someFunc = putStrLn $ show $ refine ZeroOrNeg
+testSto :: AbstractSto Sign
+testSto = insert (PrmAdr "test2") ZeroOrNeg (insert (PrmAdr "test1") STop empty)
+
+printStores :: (Show v) => [AbstractSto v] -> IO ()
+printStores s = putStrLn $ intercalate "\n" (map show s)
+
+testCovering :: IO ()
+testCovering = printStores $ covering testSto
