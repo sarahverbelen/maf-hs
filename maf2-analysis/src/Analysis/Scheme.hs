@@ -38,7 +38,7 @@ type DSto ctx v           = SchemeStore v
                                        (Adr v)
                                        (SAdr v)
                                        (PAdr v)
-                                       (VAdr v)      -- ^ combined store with heap allocated values
+                                       (VAdr v)     -- ^ combined store with heap allocated values
 
 -----------------------------------------
 -- Store & Environment
