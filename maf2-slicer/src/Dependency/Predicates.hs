@@ -1,7 +1,9 @@
 module Dependency.Predicates where 
 
--- atomicExpression :: Exp -> Sto -> Bool 
+--atomicExpression :: Exp -> Sto -> Bool 
 -- | holds if the expression e can be proved to have an atomic value U with state s, either by direct computation of the abstract semantics or by case-based reasoning    
+
+
 
 -- noDependency :: Exp -> Sto -> [Ide] -> Bool
 -- | holds if it can be proven that there is no dependency of e on variables in X. This can be proven

@@ -16,3 +16,7 @@ xCovering :: (RefinableLattice v) => [CAdr] -> AbstractSto v -> [AbstractSto v]
 -- | values of variables outside some set X take values that are the same as either the corresponding values in s or their direct subvalues
 xCovering x s = fmap fromList (sequence $ groupBy (\ a b -> fst a == fst b) ([(k, v') | (k, v) <- notInX, v' <- refine v ++ [v]] ++ inX))
                 where (inX, notInX) = partition (\a -> elem (fst a) x) (toList s)
+
+----
+-- abstract evaluation of an expression given an abstract state
+AbstractEval :: (Domain v) => Exp -> AbstractSto v -> v 

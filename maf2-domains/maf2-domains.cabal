@@ -59,6 +59,7 @@ library
       Domain.Core.NumberDomain
       Domain.Core.NumberDomain.Class
       Domain.Core.NumberDomain.ConstantPropagation
+      Domain.Core.NumberDomain.Sign
       Domain.Core.PairDomain
       Domain.Core.PairDomain.Class
       Domain.Core.PairDomain.SimplePair
@@ -81,6 +82,7 @@ library
       Domain.Scheme.Derived
       Domain.Scheme.Derived.Pair
       Domain.Scheme.Modular
+      Domain.Scheme.SignDomain
       Domain.Scheme.Store
       Lattice.HMapLattice
       Lattice.IntervalLattice

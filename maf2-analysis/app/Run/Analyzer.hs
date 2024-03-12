@@ -1,6 +1,6 @@
 {-# LANGUAGE NamedFieldPuns, LambdaCase #-}
 -- | Runs a configurable analysis on the given file
-module Run.Analyzer(Options, options, main) where
+module Run.Analyzer where -- (Options, options, main) where
 
 import Options.Applicative
 import Analysis.Scheme.Simple
@@ -58,4 +58,3 @@ main :: Options -> IO ()
 main (Options filename) = do
      contents <- readFile filename
      putStrLn $ printSto (values (runAnalysis contents))
-

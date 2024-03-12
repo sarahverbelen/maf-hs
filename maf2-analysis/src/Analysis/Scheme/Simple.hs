@@ -41,6 +41,7 @@ instance VarAdr VariableAdr V K AdrDep where
 type K = [Exp]
 
 -- | Alias for values
+-- type V = (SignValue PointerAdr VariableAdr Exp)
 type V = (CPValue PointerAdr VariableAdr Exp)
 
 -- | Type of dependency 
