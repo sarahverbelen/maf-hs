@@ -24,7 +24,7 @@ dependencies:
 - containers
 - maf2-domains
 - maf2-analysis
-#- maf2-syntax
+- maf2-syntax
 #- maf2-scv
 #- maf2-pypdg
 

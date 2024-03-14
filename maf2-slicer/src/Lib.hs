@@ -6,13 +6,13 @@ import Data.List (intercalate)
 import Interpreter.Scheme
 import Dependency.State
 
-testSto :: AbstractSto Sign
-testSto = insert (PrmAdr "test2") ZeroOrNeg (insert (PrmAdr "test1") STop empty)
+testSto :: AbstractSto String Sign
+testSto = insert "test2" ZeroOrNeg (insert "test1" STop empty)
 
-testX :: [CAdr]
-testX = [PrmAdr "test1"]
+testX :: [String]
+testX = ["test1"]
 
-printStores :: (Show v) => [AbstractSto v] -> IO ()
+printStores :: (Show v, Show k) => [AbstractSto k v] -> IO ()
 printStores s = putStrLn $ intercalate "\n" (map show s)
 
 testCovering :: IO ()

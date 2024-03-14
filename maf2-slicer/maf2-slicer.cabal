@@ -25,10 +25,14 @@ source-repository head
 
 library
   exposed-modules:
+      Agreement.Agreement
+      Agreement.GSystem
+      Agreement.Preservation
       Dependency.Lattice
       Dependency.Predicates
       Dependency.State
       Lib
+      Slicer
   other-modules:
       Paths_maf2_slicer
   autogen-modules:
@@ -41,6 +45,7 @@ library
     , containers
     , maf2-analysis
     , maf2-domains
+    , maf2-syntax
   default-language: Haskell2010
 
 executable maf2-slicer-exe
@@ -58,6 +63,7 @@ executable maf2-slicer-exe
     , maf2-analysis
     , maf2-domains
     , maf2-slicer
+    , maf2-syntax
   default-language: Haskell2010
 
 test-suite maf2-slicer-test
@@ -76,4 +82,5 @@ test-suite maf2-slicer-test
     , maf2-analysis
     , maf2-domains
     , maf2-slicer
+    , maf2-syntax
   default-language: Haskell2010
