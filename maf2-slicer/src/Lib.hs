@@ -5,14 +5,16 @@ import Lattice hiding (empty, insert)
 import Data.List (intercalate)
 import Interpreter.Scheme
 import Dependency.State
+import Syntax.Scheme.AST
 
-testSto :: AbstractSto String Sign
-testSto = insert "test2" ZeroOrNeg (insert "test1" STop empty)
+testSto :: AbstractSto Sign
+-- testSto = insert "test2" ZeroOrNeg (insert "test1" STop empty)
+testSto = empty
 
-testX :: [String]
-testX = ["test1"]
+testX :: [Ide]
+testX = []
 
-printStores :: (Show v, Show k) => [AbstractSto k v] -> IO ()
+printStores :: (Show v) => [AbstractSto v] -> IO ()
 printStores s = putStrLn $ intercalate "\n" (map show s)
 
 testCovering :: IO ()

@@ -10,7 +10,7 @@ import Data.Map as Map
 
 -- (I, X, N)
 -- initial states, relevant variables, program point
-type Criterion v = ([AbstractSto Ide v], [Ide], [Int])
+type Criterion v = ([AbstractSto v], [Ide], [Int])
 
 type Agreement = [Ide] -- agreement modeled as just a list of the variables that have to have the same abstract value 
 
