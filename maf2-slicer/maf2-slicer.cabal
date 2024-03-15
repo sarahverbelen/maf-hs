@@ -25,13 +25,13 @@ source-repository head
 
 library
   exposed-modules:
-      Agreement.Agreement
-      Agreement.GSystem
-      Agreement.Preservation
       Dependency.Lattice
       Dependency.Predicates
       Dependency.State
+      GSystem
       Lib
+      Property.Agreement
+      Property.Preservation
       Slicer
   other-modules:
       Paths_maf2_slicer
@@ -46,6 +46,7 @@ library
     , maf2-analysis
     , maf2-domains
     , maf2-syntax
+    , monads-tf
   default-language: Haskell2010
 
 executable maf2-slicer-exe
@@ -64,6 +65,7 @@ executable maf2-slicer-exe
     , maf2-domains
     , maf2-slicer
     , maf2-syntax
+    , monads-tf
   default-language: Haskell2010
 
 test-suite maf2-slicer-test
@@ -83,4 +85,5 @@ test-suite maf2-slicer-test
     , maf2-domains
     , maf2-slicer
     , maf2-syntax
+    , monads-tf
   default-language: Haskell2010

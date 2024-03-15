@@ -9,7 +9,7 @@ import Interpreter.Scheme
 import Analysis.Scheme
 import Dependency.Lattice
 
-type AbstractSto k v = Map k v 
+type AbstractSto k v = Map k v  -- todo: make function to transform the states used in maf to this AbstractSto
 
 covering :: (Eq k, Ord k, RefinableLattice v) => AbstractSto k v -> [AbstractSto k v]
 -- | a covering of a state s is a set of refinements of that state such that all possible values are accounted for
