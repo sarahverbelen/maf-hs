@@ -1,5 +1,6 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 
 module Dependency.State where 
 
@@ -30,3 +31,6 @@ xCovering x s = fmap fromList (sequence $ groupBy (\ a b -> fst a == fst b) ([(k
 -- abstract evaluation of an expression given an abstract state
 abstractEval :: (SchemeDomain v, SchemeM m v) => Exp -> m v --Exp -> AbstractSto v -> (AbstractSto v, v)
 abstractEval = Semantics.eval 
+
+abstractEvalWithPredicate :: (AbstractSto v -> Bool) -> Exp -> (AbstractSto v, v)
+abstractEvalWithPredicate = undefined
