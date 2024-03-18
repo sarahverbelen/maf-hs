@@ -1,4 +1,4 @@
-module GSystem where 
+module GSystem(labelSequence, LabeledExp) where 
 
 import Property.Agreement 
 import Syntax.Scheme.AST
@@ -9,5 +9,6 @@ type LabeledExp = Exp
 labelSequence :: Exp -> Agreement -> Agreement -> LabeledExp
 labelSequence e initialG finalG = undefined
 
--- labelStatement :: Exp -> Agreement -> Agreement
+labelExp :: Exp -> Agreement -> Agreement
 -- | implements the rules as described in the G-system
+labelExp = undefined

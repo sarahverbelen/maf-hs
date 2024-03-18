@@ -46,7 +46,9 @@ library
     , maf2-analysis
     , maf2-domains
     , maf2-syntax
+    , maf2-typelevel
     , monads-tf
+    , transformers
   default-language: Haskell2010
 
 executable maf2-slicer-exe
@@ -65,7 +67,9 @@ executable maf2-slicer-exe
     , maf2-domains
     , maf2-slicer
     , maf2-syntax
+    , maf2-typelevel
     , monads-tf
+    , transformers
   default-language: Haskell2010
 
 test-suite maf2-slicer-test
@@ -85,5 +89,7 @@ test-suite maf2-slicer-test
     , maf2-domains
     , maf2-slicer
     , maf2-syntax
+    , maf2-typelevel
     , monads-tf
+    , transformers
   default-language: Haskell2010

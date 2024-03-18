@@ -1,7 +1,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE FlexibleContexts #-}
 
-module Property.Agreement where 
+module Property.Agreement(Criterion, Agreement, criterionToAgreements, agree) where 
 
 import Syntax.Scheme.AST
 import Dependency.State
@@ -10,7 +10,7 @@ import Data.Map as Map
 
 -- (I, X, N)
 -- initial states, relevant variables, program point
-type Criterion v = ([AbstractSto v], [Ide], [Int])
+type Criterion v = ([AbstractSto v], [Ide], [Int]) -- TODO: criterion might just be the same as an agreement?
 
 type Agreement = [Ide] -- agreement modeled as just a list of the variables that have to have the same abstract value 
 
@@ -22,7 +22,7 @@ finalAgreement :: Criterion v -> Agreement
 finalAgreement = undefined
 
 criterionToAgreements :: Criterion v -> (Agreement, Agreement)
-criterionToAgreements = undefined
+criterionToAgreements c = (initialAgreement c, finalAgreement c)
 
 -- two states agree <=> every property defined by the agreement is the same in both states
 agree :: (Eq v, Ord var) => Map Ide var -> Map var v -> Map var v -> Agreement-> Bool -- TODO: rewrite for abstract state
