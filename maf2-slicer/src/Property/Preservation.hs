@@ -11,7 +11,7 @@ import qualified Data.Map as Map
 import Control.Monad.State
 
 -- | PP(g, e)
-preserve' :: (SchemeAnalysisConstraints var v ctx dep) => Exp -> State ((AbstractSto v -> Bool), Agreement) Bool
+preserve' :: (Eq v) => Exp -> State ((AbstractSto v -> Bool), Agreement) Bool --(SchemeAnalysisConstraints var v ctx dep) => Exp -> State ((AbstractSto v -> Bool), Agreement) Bool
 -- | PP-ASSIGN
 preserve' (Dfv var e _) = do b <- preserve' e 
                              (p, g) <- get
@@ -52,5 +52,5 @@ preserve' (App prc ops _) = return False -- IMPROVE: check if PP holds for the b
 preserve' _ = return True
 
 
-preserve :: (SchemeAnalysisConstraints var v ctx dep) => (AbstractSto v -> Bool) -> Agreement -> Exp -> Bool
+preserve :: (Eq v) => (AbstractSto v -> Bool) -> Agreement -> Exp -> Bool --(SchemeAnalysisConstraints var v ctx dep) => (AbstractSto v -> Bool) -> Agreement -> Exp -> Bool
 preserve p g e = evalState (preserve' e) (p, g)
