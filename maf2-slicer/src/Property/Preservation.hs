@@ -15,9 +15,10 @@ preserve' :: (Eq v) => Exp -> State ((AbstractSto v -> Bool), Agreement) Bool --
 -- | PP-ASSIGN
 preserve' (Dfv var e _) = do b <- preserve' e 
                              (p, g) <- get
-                             let (s, v) = abstractEvalWithPredicate p e
+                             --let (s, v) = abstractEvalWithPredicate p e
                              -- if this variable is in the agreement, we need to check if the property is preserved by the assignment 
-                             let b' = if var `elem` g then v `elem` Map.lookup var s else True 
+                             --let b' = if var `elem` g then v `elem` Map.lookup var s else True 
+                             let b' = True
                              return $ b && b'
 preserve' (Dff var args bdy _) = return True -- todo? does a function have an abstract property we can check?
 preserve' (Set var e x) = preserve' (Dfv var e x)
