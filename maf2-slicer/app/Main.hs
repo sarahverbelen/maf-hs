@@ -4,4 +4,4 @@ import Lib
 
 
 main :: IO ()
-main = testXCovering
+main = testLabeling

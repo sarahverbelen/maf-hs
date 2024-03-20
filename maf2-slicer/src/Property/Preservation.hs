@@ -1,5 +1,3 @@
-{-# LANGUAGE FlexibleContexts #-}
-
 module Property.Preservation(preserve) where 
 
 import Property.Agreement
