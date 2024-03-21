@@ -28,13 +28,14 @@ labelExp' e = do
 
 labelExp :: forall v . (Eq v) => Exp -> State ((AbstractSto v -> Bool), Labels, Agreement) Agreement
 -- | G-CONCAT
+labelExp (Bgn [] _) = do (_, _, g) <- get; return g
 labelExp (Bgn (e':es) x) = do 
-    labelExp' @v (Bgn es x) 
+    _  <- labelExp' @v (Bgn es x) 
     labelExp' @v e'
--- | G-ASSIGN TODO
-labelExp (Dfv var e s) = labelBinding (var, e, s) 
-labelExp (Set var e s) = labelBinding (var, e, s)
---labelExp (Dff var args bdy s) g = 
+-- | G-ASSIGN
+labelExp (Dfv var e s) = labelBinding (var, e) 
+labelExp (Set var e s) = labelBinding (var, e)
+--labelExp (Dff var args bdy s) g = TODO?
 -- | G-IF
 labelExp (Iff e a b s) = labelIf e a b s
 -- | G-LET
@@ -42,19 +43,25 @@ labelExp (Let bds bdy s) = labelLet bds bdy s
 labelExp (Ltt bds bdy s) = labelLet bds bdy s
 labelExp (Ltr bds bdy s) = labelLet bds bdy s
 labelExp (Lrr bds bdy s) = labelLet bds bdy s
--- | G-APP * TODO
-labelExp (App prc ops s) = do modify (\(p, lbls, g) -> (p, (s, g):lbls, g)); (_, _, g) <- get; return g 
+-- | G-APP TODO
+--labelExp e@(App prc ops s) = TODO
 -- | G-SKIP
-labelExp e = do modify (\(p, lbls, g) -> (p, (spanOf e, g):lbls, g)); (_, _, g) <- get; return g 
+labelExp e = labelSkip e $ spanOf e
 
--- | G-LET TODO
+-- | G-LET
 labelLet :: forall v. (Eq v) =>  [(Ide, Exp)] -> Exp -> Span -> State ((AbstractSto v -> Bool), Labels, Agreement) Agreement
-labelLet bds bdy s = do modify (\(p, lbls, g) -> (p, (s, g):lbls, g)); (_, _, g) <- get; return g  
- 
+labelLet bds bdy s = do _ <- sequence $ map labelBinding (reverse bds) 
+                        g <- labelExp' bdy
+                        return g
+
 -- | G-ASSIGN TODO
-labelBinding :: forall v . (Eq v) => (Ide, Exp, Span) -> State ((AbstractSto v -> Bool), Labels, Agreement) Agreement
-labelBinding (var, e, s) = do modify (\(p, lbls, g) -> (p, (s, g):lbls, g)); (_, _, g) <- get; return g 
+labelBinding :: forall v . (Eq v) => (Ide, Exp) -> State ((AbstractSto v -> Bool), Labels, Agreement) Agreement
+labelBinding (var, e) = labelSkip e $ spanOf e
 
 -- | G-IF TODO
 labelIf :: forall v . (Eq v) => Exp -> Exp -> Exp -> Span -> State ((AbstractSto v -> Bool), Labels, Agreement) Agreement
-labelIf e a b s = do modify (\(p, lbls, g) -> (p, (s, g):lbls, g)); (_, _, g) <- get; return g 
+labelIf e a b s = labelSkip e s
+
+-- | G-SKIP
+labelSkip :: Exp -> Span -> State ((AbstractSto v -> Bool), Labels, Agreement) Agreement
+labelSkip e s = do (p, lbls, g) <- get; put (p, (s, g):lbls, g); return g
