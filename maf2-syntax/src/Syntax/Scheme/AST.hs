@@ -2,7 +2,7 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
-module Syntax.Scheme.AST (Exp(..), Ide(..), parseSchemeExp, parseSchemeExp', testParser, isDefine, spanOf, Span, Hdl(..)) where
+module Syntax.Scheme.AST (Exp(..), Ide(..), parseSchemeExp, parseSchemeExp', testParser, isDefine, spanOf, Span(..), Hdl(..)) where
 
 
 import Data.Hashable
@@ -12,7 +12,7 @@ import Control.Monad
 import Control.Monad.Except
 import Text.Printf
 import qualified Syntax.Scheme.Parser as SExp
-import Syntax.Scheme.Parser (Span, SExp, pattern (:::))
+import Syntax.Scheme.Parser (Span(..), SExp, pattern (:::))
 import Control.Applicative
 import Control.Monad.Reader
 

@@ -1,6 +1,6 @@
 {-# LANGUAGE PatternSynonyms #-}
 -- | Parser to S-expressions
-module Syntax.Scheme.Parser(SExp(..), Span, parseSexp, spanOf, pattern (:::)) where
+module Syntax.Scheme.Parser(SExp(..), Span(..), parseSexp, spanOf, pattern (:::)) where
 
 import GHC.Generics (Generic)
 import Data.Hashable
