@@ -24,6 +24,7 @@ dependencies:
 - containers
 - monads-tf 
 - transformers
+- extra
 - maf2-domains
 - maf2-analysis
 - maf2-syntax

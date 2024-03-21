@@ -43,6 +43,7 @@ library
   build-depends:
       base >=4.7 && <5
     , containers
+    , extra
     , maf2-analysis
     , maf2-domains
     , maf2-syntax
@@ -63,6 +64,7 @@ executable maf2-slicer-exe
   build-depends:
       base >=4.7 && <5
     , containers
+    , extra
     , maf2-analysis
     , maf2-domains
     , maf2-slicer
@@ -85,6 +87,7 @@ test-suite maf2-slicer-test
   build-depends:
       base >=4.7 && <5
     , containers
+    , extra
     , maf2-analysis
     , maf2-domains
     , maf2-slicer
