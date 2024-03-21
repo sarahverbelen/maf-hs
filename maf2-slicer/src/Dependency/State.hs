@@ -33,8 +33,7 @@ import Control.Monad.DomainError (runMayEscape, DomainError, MonadEscape(..))
 import Dependency.Lattice
 import Analysis.Scheme
 
-type AbstractSto v = Map Ide v  -- todo: make function to transform the states used in maf to this AbstractSto
--- TODO: AbstractEnv? 
+type AbstractSto v = Map Ide v
 
 covering :: (RefinableLattice v) => AbstractSto v -> [AbstractSto v]
 -- | a covering of a state s is a set of refinements of that state such that all possible values are accounted for
@@ -46,11 +45,7 @@ xCovering x s = fmap fromList (sequence $ groupBy (\ a b -> fst a == fst b) ([(k
                 where (inX, notInX) = partition (\a -> elem (fst a) x) (toList s)
 
 ----
--- class AbstractState v where 
---     abstractEval :: (Exp, Env var v ctx dep, ctx) -> DSto ctx v -> (DSto ctx v, v) --Exp -> AbstractSto v -> (AbstractSto v, v)
---     abstractEvalWithPredicate :: (AbstractSto v -> Bool) -> Exp -> (AbstractSto v, v)
-
--- instance (SchemeAnalysisConstraints var v ctx dep) => AbstractState v where 
+--     abstractEval :: (Exp, Env var v ctx dep, ctx) -> DSto ctx v -> (DSto ctx v, v)
 --     -- abstractEval (exp, env, ctx) store =
 --     --    let ((val, (spawns, registers, triggers)), sto) = (Semantics.eval exp >>= writeAdr (retAdr (exp, env, ctx, Ghost)))
 --     --           & runEvalT
@@ -69,11 +64,14 @@ xCovering x s = fmap fromList (sequence $ groupBy (\ a b -> fst a == fst b) ([(k
 --     --           & runCtx  ctx
 --     --           & runIdentity
 --     --    in (sto, val) 
---     abstractEval = undefined
---     abstractEvalWithPredicate = undefined
+
 
 abstractEval :: Exp -> AbstractSto v -> (AbstractSto v, v)
 abstractEval = undefined
 
 abstractEvalWithPredicate :: (AbstractSto v -> Bool) -> Exp -> (AbstractSto v, v)
+-- generate an abstract store that containts all variables in Exp, set all of their values to Top 
+-- compute the covering of this abstract store
+-- filter the set of stores using the predicate
+-- run the abstract interpreter for the expression using these stores as initial states
 abstractEvalWithPredicate = undefined

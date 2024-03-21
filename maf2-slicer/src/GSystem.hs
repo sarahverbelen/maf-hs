@@ -16,14 +16,21 @@ type Labels = [(Span, Agreement)]
 
 -- label all statements in the sequence with agreements by backwards propagating the G-system rules
 labelSequence :: forall v . (Eq v) => Exp -> Agreement -> Labels
-labelSequence e g = snd3 $ execState (labelExp @v e) ((const True), [], g)
+labelSequence e g = snd3 $ execState (labelExp' @v e) ((const True), [], g)
+
+-- | G-PP
+labelExp' :: forall v . (Eq v) => Exp -> State ((AbstractSto v -> Bool), Labels, Agreement) Agreement
+labelExp' e = do 
+    (p, lbls, g) <- get
+    if (preserve p g e)
+        then do put (p, (spanOf e, g):lbls, g); return g
+        else do labelExp e
 
 labelExp :: forall v . (Eq v) => Exp -> State ((AbstractSto v -> Bool), Labels, Agreement) Agreement
--- | G-PP TODO
 -- | G-CONCAT
 labelExp (Bgn (e':es) x) = do 
-    labelExp @v (Bgn es x) 
-    labelExp @v e'
+    labelExp' @v (Bgn es x) 
+    labelExp' @v e'
 -- | G-ASSIGN TODO
 labelExp (Dfv var e s) = labelBinding (var, e, s) 
 labelExp (Set var e s) = labelBinding (var, e, s)

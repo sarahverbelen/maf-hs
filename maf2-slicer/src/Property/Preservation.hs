@@ -18,7 +18,7 @@ preserve p g e = evalState (preserve' e) (p, g)
 preserve' :: forall v . (Eq v) => Exp -> State ((AbstractSto v -> Bool), Agreement) Bool
 -- | PP-ASSIGN
 preserve' (Dfv var e _) = preserveBinding (var, e)
-preserve' (Dff var args bdy _) = return True -- todo? does a function have an abstract property we can check?
+preserve' (Dff var args bdy _) = return True -- todo?
 preserve' (Set var e x) = preserveBinding (var, e)
 -- | PP-LET
 preserve' (Let binds bdy _) = preserveLet binds bdy
