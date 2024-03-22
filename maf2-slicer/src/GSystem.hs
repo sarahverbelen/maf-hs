@@ -10,7 +10,8 @@ import Dependency.State
 import Syntax.Scheme.AST
 
 import Control.Monad.State
-import Data.Tuple.Extra(snd3)
+import Data.Tuple.Extra (snd3)
+import Data.List (intersect)
 
 type Labels = [(Span, Agreement)]
 
@@ -43,8 +44,8 @@ labelExp (Let bds bdy s) = labelLet bds bdy s
 labelExp (Ltt bds bdy s) = labelLet bds bdy s
 labelExp (Ltr bds bdy s) = labelLet bds bdy s
 labelExp (Lrr bds bdy s) = labelLet bds bdy s
--- | G-APP TODO
---labelExp e@(App prc ops s) = TODO
+--( | G-APP TODO
+--labelExp e@(App prc ops s) =)
 -- | G-SKIP
 labelExp e = labelSkip e $ spanOf e
 
@@ -54,13 +55,19 @@ labelLet bds bdy s = do _ <- sequence $ map labelBinding (reverse bds)
                         g <- labelExp' bdy
                         return g
 
--- | G-ASSIGN TODO
+-- | G-ASSIGN TODO 
 labelBinding :: forall v . (Eq v) => (Ide, Exp) -> State ((AbstractSto v -> Bool), Labels, Agreement) Agreement
 labelBinding (var, e) = labelSkip e $ spanOf e
 
--- | G-IF TODO
+-- | G-IF
 labelIf :: forall v . (Eq v) => Exp -> Exp -> Exp -> Span -> State ((AbstractSto v -> Bool), Labels, Agreement) Agreement
-labelIf e a b s = labelSkip e s
+labelIf e a c s = do (p, _, g) <- get -- todo: update predicate
+                     ga <- labelExp' a
+                     (_, lbl, _) <- get; put (p, lbl, g) -- todo: update predicate
+                     gc <- labelExp' c
+                     let gb = intersect ga gc
+                     (_, lbl', _) <- get; put (p, (s, gb):lbl', gb)
+                     return gb
 
 -- | G-SKIP
 labelSkip :: Exp -> Span -> State ((AbstractSto v -> Bool), Labels, Agreement) Agreement

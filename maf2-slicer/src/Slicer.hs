@@ -16,5 +16,5 @@ slice :: forall v . (Eq v) => Exp -> Agreement -> Exp
 slice p c = removeRedundantExp p $ labelSequence @v p c
 
 removeRedundantExp :: Exp -> Labels -> Exp 
--- | makes use of the labels and property preservation to decide what statements to remove
-removeRedundantExp = undefined
+-- | makes use of the labels to decide what statements to remove
+removeRedundantExp = 
