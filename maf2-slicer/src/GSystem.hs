@@ -15,19 +15,21 @@ import Data.List (intersect)
 
 type Labels = [(Span, Agreement)]
 
+type LabelState v = State (AbstractSto v, Labels, Agreement) Agreement
+
 -- label all statements in the sequence with agreements by backwards propagating the G-system rules
 labelSequence :: forall v . (Eq v) => Exp -> Agreement -> Labels
-labelSequence e g = snd3 $ execState (labelExp' @v e) ((const True), [], g)
+labelSequence e g = snd3 $ execState (labelExp' @v e) (mempty, [], g)
 
 -- | G-PP
-labelExp' :: forall v . (Eq v) => Exp -> State ((AbstractSto v -> Bool), Labels, Agreement) Agreement
+labelExp' :: forall v . (Eq v) => Exp -> LabelState v
 labelExp' e = do 
     (p, lbls, g) <- get
     if (preserve p g e)
         then do put (p, (spanOf e, g):lbls, g); return g
         else do labelExp e
 
-labelExp :: forall v . (Eq v) => Exp -> State ((AbstractSto v -> Bool), Labels, Agreement) Agreement
+labelExp :: forall v . (Eq v) => Exp -> LabelState v
 -- | G-CONCAT
 labelExp (Bgn [] _) = do (_, _, g) <- get; return g
 labelExp (Bgn (e':es) x) = do 
@@ -50,17 +52,17 @@ labelExp (Lrr bds bdy s) = labelLet bds bdy s
 labelExp e = labelSkip e $ spanOf e
 
 -- | G-LET
-labelLet :: forall v. (Eq v) =>  [(Ide, Exp)] -> Exp -> Span -> State ((AbstractSto v -> Bool), Labels, Agreement) Agreement
+labelLet :: forall v. (Eq v) =>  [(Ide, Exp)] -> Exp -> Span -> LabelState v
 labelLet bds bdy s = do _ <- sequence $ map labelBinding (reverse bds) 
                         g <- labelExp' bdy
                         return g
 
 -- | G-ASSIGN TODO 
-labelBinding :: forall v . (Eq v) => (Ide, Exp) -> State ((AbstractSto v -> Bool), Labels, Agreement) Agreement
+labelBinding :: forall v . (Eq v) => (Ide, Exp) -> LabelState v
 labelBinding (var, e) = labelSkip e $ spanOf e
 
 -- | G-IF
-labelIf :: forall v . (Eq v) => Exp -> Exp -> Exp -> Span -> State ((AbstractSto v -> Bool), Labels, Agreement) Agreement
+labelIf :: forall v . (Eq v) => Exp -> Exp -> Exp -> Span -> LabelState v
 labelIf e a c s = do (p, _, g) <- get -- todo: update predicate
                      ga <- labelExp' a
                      (_, lbl, _) <- get; put (p, lbl, g) -- todo: update predicate
@@ -70,5 +72,5 @@ labelIf e a c s = do (p, _, g) <- get -- todo: update predicate
                      return gb
 
 -- | G-SKIP
-labelSkip :: Exp -> Span -> State ((AbstractSto v -> Bool), Labels, Agreement) Agreement
+labelSkip :: Exp -> Span -> LabelState v
 labelSkip e s = do (p, lbls, g) <- get; put (p, (s, g):lbls, g); return g

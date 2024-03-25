@@ -69,9 +69,8 @@ xCovering x s = fmap fromList (sequence $ groupBy (\ a b -> fst a == fst b) ([(k
 abstractEval :: Exp -> AbstractSto v -> (AbstractSto v, v)
 abstractEval = undefined
 
-abstractEvalWithPredicate :: (AbstractSto v -> Bool) -> Exp -> (AbstractSto v, v)
--- generate an abstract store that containts all variables in Exp, set all of their values to Top 
--- compute the covering of this abstract store (one lvl or for all lvls?)
--- (filter the set of stores using the predicate)
+abstractEvalWithPredicate :: AbstractSto v -> Exp -> v
+-- extend the abstract store with all variables in Exp, set all of their values to Top 
+-- compute the X-covering (X = all variables in the store before we extended it) of this abstract store (one lvl or for all lvls?)
 -- run the abstract interpreter for the expression using these stores as initial states
 abstractEvalWithPredicate = undefined

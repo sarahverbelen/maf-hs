@@ -10,12 +10,14 @@ import Analysis.Scheme
 import qualified Data.Map as Map
 import Control.Monad.State
 
+type PreserveState v = State (AbstractSto v, Agreement) Bool
+
 -- | PP(g, e)
-preserve :: (Eq v) => (AbstractSto v -> Bool) -> Agreement -> Exp -> Bool
+preserve :: (Eq v) => AbstractSto v -> Agreement -> Exp -> Bool
 preserve p g e = evalState (preserve' e) (p, g)
 
 
-preserve' :: forall v . (Eq v) => Exp -> State ((AbstractSto v -> Bool), Agreement) Bool
+preserve' :: forall v . (Eq v) => Exp -> PreserveState v
 -- | PP-ASSIGN
 preserve' (Dfv var e _) = preserveBinding (var, e)
 preserve' (Dff var args bdy _) = return True -- todo?
@@ -39,22 +41,23 @@ preserve' _ = return True
 
 
 -- | PP-LET
-preserveLet :: forall v . (Eq v) => [(Ide, Exp)] -> Exp -> State ((AbstractSto v -> Bool), Agreement) Bool
+preserveLet :: forall v . (Eq v) => [(Ide, Exp)] -> Exp -> PreserveState v
 preserveLet binds bdy = do  bs <- sequence $ map preserveBinding binds
                             b <- preserve' bdy 
                             return $ b && and bs
 
 -- | PP-ASSIGN              
-preserveBinding :: forall v . (Eq v) => (Ide, Exp) -> State ((AbstractSto v -> Bool), Agreement) Bool              
+preserveBinding :: forall v . (Eq v) => (Ide, Exp) -> PreserveState v              
 preserveBinding (var, e) = do   b <- preserve' e 
                                 (p, g) <- get
-                                let (s, v) = abstractEvalWithPredicate p e
+                                let v = abstractEvalWithPredicate p e
                                 -- if this variable is in the agreement, we need to check if the property is preserved by the assignment 
-                                let b' = if var `elem` g then v `elem` Map.lookup var s else True 
+                                --let b' = if var `elem` g then v `elem` Map.lookup var s else True 
+                                let b' = True
                                 return $ b && b'
 
--- |PP-IF (TODO: update predicate)
-preserveIf :: forall v . (Eq v) => Exp -> Exp -> Exp -> State ((AbstractSto v -> Bool), Agreement) Bool
+-- |PP-IF (TODO: update AbstractSto)
+preserveIf :: forall v . (Eq v) => Exp -> Exp -> Exp -> PreserveState v
 preserveIf _ c a = do   (p, g) <- get 
                         let pc = p
                         put (pc, g); bc <- preserve' c 
