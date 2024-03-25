@@ -49,18 +49,20 @@ preserveLet binds bdy = do  bs <- sequence $ map preserveBinding binds
 -- | PP-ASSIGN              
 preserveBinding :: forall v . (Eq v) => (Ide, Exp) -> PreserveState v              
 preserveBinding (var, e) = do   b <- preserve' e 
-                                (p, g) <- get
-                                let v = abstractEvalWithPredicate p e
+                                (s, g) <- get
+                                let v = abstractEvalWithPredicate s e
+                                -- update the value in our abstract state
+                                let s' = Map.insert var v s
+                                put (s', g)
                                 -- if this variable is in the agreement, we need to check if the property is preserved by the assignment 
-                                --let b' = if var `elem` g then v `elem` Map.lookup var s else True 
-                                let b' = True
+                                let b' = if var `elem` g then v `elem` Map.lookup var s else True 
                                 return $ b && b'
 
--- |PP-IF (TODO: update AbstractSto)
+-- |PP-IF (assumes no side effects in condition)
 preserveIf :: forall v . (Eq v) => Exp -> Exp -> Exp -> PreserveState v
-preserveIf _ c a = do   (p, g) <- get 
-                        let pc = p
-                        put (pc, g); bc <- preserve' c 
-                        let pa = p
-                        put (pa, g); ba <- preserve' a
-                        put (p, g); return $ bc && ba                             
+preserveIf _ c a = do   (s, g) <- get 
+                        let sc = s -- todo: update with info from condition
+                        put (sc, g); bc <- preserve' c 
+                        let sa = s -- todo: update with info from condition
+                        put (sa, g); ba <- preserve' a
+                        put (s, g); return $ bc && ba                             

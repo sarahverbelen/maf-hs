@@ -24,9 +24,9 @@ labelSequence e g = snd3 $ execState (labelExp' @v e) (mempty, [], g)
 -- | G-PP
 labelExp' :: forall v . (Eq v) => Exp -> LabelState v
 labelExp' e = do 
-    (p, lbls, g) <- get
-    if (preserve p g e)
-        then do put (p, (spanOf e, g):lbls, g); return g
+    (sto, lbls, g) <- get
+    if (preserve sto g e)
+        then do put (sto, (spanOf e, g):lbls, g); return g
         else do labelExp e
 
 labelExp :: forall v . (Eq v) => Exp -> LabelState v
@@ -63,14 +63,14 @@ labelBinding (var, e) = labelSkip e $ spanOf e
 
 -- | G-IF
 labelIf :: forall v . (Eq v) => Exp -> Exp -> Exp -> Span -> LabelState v
-labelIf e a c s = do (p, _, g) <- get -- todo: update predicate
+labelIf e a c s = do (sto, _, g) <- get -- todo: update state
                      ga <- labelExp' a
-                     (_, lbl, _) <- get; put (p, lbl, g) -- todo: update predicate
+                     (_, lbl, _) <- get; put (sto, lbl, g) -- todo: update state
                      gc <- labelExp' c
                      let gb = intersect ga gc
-                     (_, lbl', _) <- get; put (p, (s, gb):lbl', gb)
+                     (_, lbl', _) <- get; put (sto, (s, gb):lbl', gb)
                      return gb
 
 -- | G-SKIP
 labelSkip :: Exp -> Span -> LabelState v
-labelSkip e s = do (p, lbls, g) <- get; put (p, (s, g):lbls, g); return g
+labelSkip e s = do (sto, lbls, g) <- get; put (sto, (s, g):lbls, g); return g
