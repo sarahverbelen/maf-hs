@@ -55,7 +55,8 @@ preserveBinding (var, e) = do   b <- preserve' e
                                 let s' = Map.insert var v s
                                 put (s', g)
                                 -- if this variable is in the agreement, we need to check if the property is preserved by the assignment 
-                                let b' = if var `elem` g then v `elem` Map.lookup var s else True 
+                                let ideEq = (\a b -> name a == name b)    
+                                let b' = if any (ideEq var) g then v `elem` Map.lookup var s else True 
                                 return $ b && b'
 
 -- |PP-IF (assumes no side effects in condition)
