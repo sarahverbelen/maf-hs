@@ -19,14 +19,14 @@ instance AtomicLattice Sign where
 
 --- REFINEMENTS
 
-class (JoinLattice v) => RefinableLattice v where 
+class (TopLattice v) => RefinableLattice v where 
 -- | refine returns a list of all elements that are immediate predecessors   
     refine :: v -> [v] 
 
-instance (Ord a, Show a, Enum a, Bounded a) => RefinableLattice (CP a) where 
-    refine Bottom = [] -- [Bottom]
-    refine (Constant _) = [Bottom]
-    refine Top = [Constant i | i <- [minBound..]]
+-- instance (Ord a, Show a, Enum a, Bounded a) => RefinableLattice (CP a) where 
+--     refine Bottom = [] -- [Bottom]
+--     refine (Constant _) = [Bottom]
+--     refine Top = [Constant i | i <- [minBound..]]
 
 instance RefinableLattice Sign where 
     refine SBottom = [] -- [SBottom]

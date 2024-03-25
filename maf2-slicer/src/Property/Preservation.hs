@@ -4,6 +4,7 @@ module Property.Preservation(preserve) where
 
 import Property.Agreement
 import Dependency.State
+import Dependency.Lattice
 import Syntax.Scheme.AST
 import Analysis.Scheme
 
@@ -13,11 +14,11 @@ import Control.Monad.State
 type PreserveState v = State (AbstractSto v, Agreement) Bool
 
 -- | PP(g, e)
-preserve :: (Eq v) => AbstractSto v -> Agreement -> Exp -> Bool
+preserve :: (RefinableLattice v) => AbstractSto v -> Agreement -> Exp -> Bool
 preserve p g e = evalState (preserve' e) (p, g)
 
 
-preserve' :: forall v . (Eq v) => Exp -> PreserveState v
+preserve' :: forall v . (RefinableLattice v) => Exp -> PreserveState v
 -- | PP-ASSIGN
 preserve' (Dfv var e _) = preserveBinding (var, e)
 preserve' (Dff var args bdy _) = return True -- todo?
@@ -41,16 +42,16 @@ preserve' _ = return True
 
 
 -- | PP-LET
-preserveLet :: forall v . (Eq v) => [(Ide, Exp)] -> Exp -> PreserveState v
+preserveLet :: forall v . (RefinableLattice v) => [(Ide, Exp)] -> Exp -> PreserveState v
 preserveLet binds bdy = do  bs <- sequence $ map preserveBinding binds
                             b <- preserve' bdy 
                             return $ b && and bs
 
 -- | PP-ASSIGN              
-preserveBinding :: forall v . (Eq v) => (Ide, Exp) -> PreserveState v              
+preserveBinding :: forall v . (RefinableLattice v) => (Ide, Exp) -> PreserveState v              
 preserveBinding (var, e) = do   b <- preserve' e 
                                 (s, g) <- get
-                                let v = abstractEvalWithPredicate s e
+                                let v = abstractEvalWithState s e
                                 -- update the value in our abstract state
                                 let s' = Map.insert var v s
                                 put (s', g)
@@ -60,7 +61,7 @@ preserveBinding (var, e) = do   b <- preserve' e
                                 return $ b && b'
 
 -- |PP-IF (assumes no side effects in condition)
-preserveIf :: forall v . (Eq v) => Exp -> Exp -> Exp -> PreserveState v
+preserveIf :: forall v . (RefinableLattice v) => Exp -> Exp -> Exp -> PreserveState v
 preserveIf _ c a = do   (s, g) <- get 
                         let sc = s -- todo: update with info from condition
                         put (sc, g); bc <- preserve' c 

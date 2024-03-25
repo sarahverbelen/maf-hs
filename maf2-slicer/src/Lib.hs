@@ -9,6 +9,7 @@ import Dependency.State
 import GSystem
 import Syntax.Scheme.AST
 import Syntax.Scheme
+import Lattice
 
 import Data.Maybe
 
@@ -25,6 +26,6 @@ testLabeling :: IO ()
 testLabeling = do 
     contents <- readFile testProgram 
     let exp = fromJust $ parseString contents
-    let labeledExp = labelSequence @Integer exp testX
+    let labeledExp = labelSequence @Sign exp testX
     putStrLn $ show exp
     putStrLn $ show labeledExp

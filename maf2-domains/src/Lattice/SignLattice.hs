@@ -63,3 +63,6 @@ instance (Num c, Ord c) => Domain Sign c where
         | x == 0 = Zero 
         | x < 0 = Neg 
         | x > 0 = Pos   
+
+instance TopLattice Sign where 
+    top = STop
