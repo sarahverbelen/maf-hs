@@ -12,15 +12,15 @@ import Syntax.Scheme.AST
 
 import Control.Monad.State
 import Data.Tuple.Extra (snd3)
-import Data.List (intersect, subsequences, nubBy, deleteBy)
+import Data.List (intersect, subsequences, nubBy)
 import qualified Data.Map as Map
 
 type Labels = [(Span, Agreement)]
 
 type LabelState v = State (AbstractSto v, Labels, Agreement) Agreement
 
--- label all statements in the sequence with agreements by backwards propagating the G-system rules
 labelSequence :: forall v . (RefinableLattice v) => Exp -> Agreement -> Labels
+-- | label all statements in the sequence with agreements by backwards propagating the G-system rules
 labelSequence e g = snd3 $ execState (labelExp' @v e) (mempty, [], g)
 
 -- | G-PP
@@ -39,9 +39,9 @@ labelExp (Bgn es s) = do
     put (sto, (s, g):lbl, g)
     return g
 -- | G-ASSIGN
-labelExp (Dfv var e s) = labelBinding (var, e) 
-labelExp (Set var e s) = labelBinding (var, e)
---labelExp (Dff var args bdy s) g = TODO?
+labelExp (Dfv var e _) = labelBinding (var, e) 
+labelExp (Set var e _) = labelBinding (var, e)
+--labelExp (Dff var args bdy s) g = ?
 -- | G-IF
 labelExp (Iff e a b s) = labelIf e a b s
 -- | G-LET
@@ -50,19 +50,18 @@ labelExp (Ltt bds bdy s) = labelLet bds bdy s
 labelExp (Ltr bds bdy s) = labelLet bds bdy s
 labelExp (Lrr bds bdy s) = labelLet bds bdy s
 --( | G-APP TODO
---labelExp e@(App prc ops s) =)
+--labelExp e@(App prc ops s) = ?)
 -- | G-SKIP
 labelExp e = labelSkip $ spanOf e
 
 -- | G-LET
 labelLet :: forall v. (RefinableLattice v) =>  [(Ide, Exp)] -> Exp -> Span -> LabelState v
-labelLet bds bdy s = do sequence_ $ map labelBinding (reverse bds)
+labelLet bds bdy _ = do sequence_ $ map labelBinding (reverse bds)
                         labelExp' bdy
 
 -- | G-ASSIGN
 labelBinding :: forall v . (RefinableLattice v) => (Ide, Exp) -> LabelState v
-labelBinding (var, e) = do  --labelExp' e TODO: check if necessary? 
-                            let ideEq = (\a b -> name a == name b)
+labelBinding (var, e) = do  let ideEq = (\a b -> name a == name b)
                             let vars = nubBy ideEq $ getVarsFromExp e
                             (sto, lbl, g) <- get 
                             let gs = [g' | g' <- subsequences $ g ++ vars] -- all possible agreements
@@ -79,7 +78,7 @@ labelBinding (var, e) = do  --labelExp' e TODO: check if necessary?
 
 -- | G-IF
 labelIf :: forall v . (RefinableLattice v) => Exp -> Exp -> Exp -> Span -> LabelState v
-labelIf e a c s = do (sto, _, g) <- get -- todo: update state
+labelIf _ a c s = do (sto, _, g) <- get -- todo: update state
                      ga <- labelExp' a
                      (_, lbl, _) <- get; put (sto, lbl, g) -- todo: update state
                      gc <- labelExp' c

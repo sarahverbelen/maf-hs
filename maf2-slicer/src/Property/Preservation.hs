@@ -7,7 +7,6 @@ import Dependency.State
 import Dependency.Lattice
 import Lattice
 import Syntax.Scheme.AST
-import Analysis.Scheme
 
 import qualified Data.Map as Map
 import Control.Monad.State
@@ -22,8 +21,8 @@ preserve p g e = evalState (preserve' e) (p, g)
 preserve' :: forall v . (RefinableLattice v) => Exp -> PreserveState v
 -- | PP-ASSIGN
 preserve' (Dfv var e _) = preserveBinding (var, e)
-preserve' (Dff var args bdy _) = return True -- todo?
-preserve' (Set var e x) = preserveBinding (var, e)
+--preserve' (Dff var args bdy _) =  todo?
+preserve' (Set var e _) = preserveBinding (var, e)
 -- | PP-LET
 preserve' (Let binds bdy _) = preserveLet binds bdy
 preserve' (Ltt binds bdy _) = preserveLet binds bdy
@@ -37,7 +36,7 @@ preserve' (Bgn (e:es) x) = do b <- preserve' e
 -- |PP-IF
 preserve' (Iff b c a _) = preserveIf b c a
 -- | PP-APP * (TODO)
-preserve' (App prc ops _) = return False
+preserve' (App _ _ _) = return False
 -- | PP-SKIP (all other expressions don't modify the state and as such are equivalent to skip)
 preserve' _ = return True
 
@@ -57,7 +56,7 @@ preserveBinding (var, e) = do   b <- preserve' e
                                 let s' = Map.insert var v s
                                 put (s', g)
                                 -- if this variable is in the agreement, we need to check if the property is preserved by the assignment 
-                                let ideEq = (\a b -> name a == name b)    
+                                let ideEq = (\ia ib -> name ia == name ib)    
                                 let b' = if any (ideEq var) g then (if v == top then False else v `elem` Map.lookup var s) else True 
                                 return $ b && b'
 

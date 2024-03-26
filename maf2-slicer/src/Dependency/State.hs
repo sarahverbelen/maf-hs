@@ -4,33 +4,14 @@
 
 module Dependency.State(AbstractSto, covering, xCovering, abstractEval, abstractEvalWithState, getVarsFromExp, generateStates) where 
 
-import Analysis.Scheme.Primitives
-import qualified Analysis.Scheme.Semantics as Semantics
-import Analysis.Scheme.Monad (SchemeM)
-import Analysis.Monad hiding (getEnv)
-
-import Control.SVar.ModX
-import Control.Monad.Trans.Class
-import Control.Monad.Join
-import Control.Monad.Layer
-import Control.Monad.Cond (whenM)
-
 import Syntax.Scheme
 import Lattice
-import Domain.Scheme hiding (Exp, Env)
-
-import Data.Set (Set)
-import Data.Functor.Identity
-import Data.TypeLevel.Ghost
-import Data.Function ((&))
-import qualified Data.Map as Map hiding (partition)
-import Data.List (groupBy, partition, elem)
-import Analysis.Monad (EnvM(..))
-import Analysis.Scheme.Store
-import Control.Monad.DomainError (runMayEscape, DomainError, MonadEscape(..))
-
 import Dependency.Lattice
-import Analysis.Scheme
+
+import qualified Data.Map as Map hiding (partition)
+import Data.List (groupBy, partition)
+
+
 
 type AbstractSto v = Map.Map Ide v
 
@@ -46,7 +27,7 @@ xCovering x s = fmap Map.fromList (sequence $ groupBy (\ a b -> fst a == fst b) 
 -- | TODO
 abstractEval :: Exp -> AbstractSto v -> v
 -- | finds the value of the expression in the given abstract state
-abstractEval e s = undefined
+abstractEval = undefined
 
 generateStates :: (RefinableLattice v) => Exp -> AbstractSto v -> [AbstractSto v] -- TODO: should this go only one level or should it go until bottom?
 -- | generates a set of states from a state by extending it with the variables in the expression 
@@ -77,5 +58,5 @@ getVarsFromExp (Let bds bdy _)     = map fst bds ++ getVarsFromExp bdy
 getVarsFromExp (Ltt bds bdy _)     = map fst bds ++ getVarsFromExp bdy
 getVarsFromExp (Ltr bds bdy _)     = map fst bds ++ getVarsFromExp bdy
 getVarsFromExp (Lrr bds bdy _)     = map fst bds ++ getVarsFromExp bdy
-getVarsFromExp (App op ops _)      = foldr (\e l -> l ++ getVarsFromExp e) [] ops -- ++ getVarsFromExp op
+getVarsFromExp (App _ ops _)      = foldr (\e l -> l ++ getVarsFromExp e) [] ops
 getVarsFromExp _                   = []

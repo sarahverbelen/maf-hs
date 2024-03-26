@@ -26,7 +26,6 @@ source-repository head
 library
   exposed-modules:
       Dependency.Lattice
-      Dependency.Predicates
       Dependency.State
       GSystem
       Lib

@@ -25,7 +25,7 @@ printStores s = putStrLn $ intercalate "\n" (map show s)
 testLabeling :: IO ()
 testLabeling = do 
     contents <- readFile testProgram 
-    let exp = fromJust $ parseString contents
-    let labeledExp = labelSequence @Sign exp testX
-    putStrLn $ show exp
+    let e = fromJust $ parseString contents
+    let labeledExp = labelSequence @Sign e testX
+    putStrLn $ show e
     putStrLn $ show labeledExp
