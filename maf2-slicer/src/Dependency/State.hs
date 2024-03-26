@@ -2,7 +2,7 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Dependency.State(AbstractSto, covering, xCovering, abstractEval, abstractEvalWithState, getVarsFromExp) where 
+module Dependency.State(AbstractSto, covering, xCovering, abstractEval, abstractEvalWithState, getVarsFromExp, generateStates) where 
 
 import Analysis.Scheme.Primitives
 import qualified Analysis.Scheme.Semantics as Semantics
@@ -43,44 +43,26 @@ xCovering :: (RefinableLattice v) => [Ide] -> AbstractSto v -> [AbstractSto v]
 xCovering x s = fmap Map.fromList (sequence $ groupBy (\ a b -> fst a == fst b) ([(k, v') | (k, v) <- notInX, v' <- refine v ++ [v]] ++ inX))
                 where (inX, notInX) = partition (\a -> elem (fst a) x) (Map.toList s)
 
-----
---     abstractEval :: (Exp, Env var v ctx dep, ctx) -> DSto ctx v -> (DSto ctx v, v)
---     -- abstractEval (exp, env, ctx) store =
---     --    let ((val, (spawns, registers, triggers)), sto) = (Semantics.eval exp >>= writeAdr (retAdr (exp, env, ctx, Ghost)))
---     --           & runEvalT
---     --           & runMayEscape @_ @(Set DomainError)
---     --           & runCallT @v @ctx
---     --           & runStoreT @VrAdr (values  store)
---     --           & runStoreT @StAdr (strings store)
---     --           & runStoreT @PaAdr (pairs   store)
---     --           & runStoreT @VeAdr (vecs    store)
---     --           & combineStores
---     --           & runEnv env
---     --           & runAlloc @PaAdr (allocPai @ctx)
---     --           & runAlloc @VeAdr (allocVec @ctx)
---     --           & runAlloc @StAdr (allocStr @ctx)
---     --           & runAlloc @VrAdr (allocVar @ctx)
---     --           & runCtx  ctx
---     --           & runIdentity
---     --    in (sto, val) 
+-- | TODO
+abstractEval :: Exp -> AbstractSto v -> v
+-- | finds the value of the expression in the given abstract state
+abstractEval e s = undefined
 
-
-abstractEval :: AbstractSto v -> Exp -> v
--- finds the value of the expression in the given abstract state
-abstractEval = undefined
-
-generateStates :: (RefinableLattice v) => Exp -> AbstractSto v -> [AbstractSto v]
--- generates a set of states where 
-generateStates e s = xCovering varsInExp (extendState varsInExp s) where varsInExp = (getVarsFromExp e)
+generateStates :: (RefinableLattice v) => Exp -> AbstractSto v -> [AbstractSto v] -- TODO: should this go only one level or should it go until bottom?
+-- | generates a set of states from a state by extending it with the variables in the expression 
+--   and computing the x-covering (keeping the variables already in the store unchanged)
+generateStates e s = xCovering (Map.keys s) (extendState (getVarsFromExp e) s)
 
 extendState :: (RefinableLattice v) => [Ide] -> AbstractSto v -> AbstractSto v 
-extendState vars sto = foldr (\var sto' -> Map.insert var top sto') sto vars
+-- | adds a list of variables to an abstract store and sets all their values to top (if they weren't in the store yet)
+extendState vars sto = foldr (\var sto' -> Map.insertWith (flip const) var top sto') sto vars
 
 abstractEvalWithState :: (RefinableLattice v) => AbstractSto v -> Exp -> v
--- extend the abstract store with all other variables in Exp, set all of their values to Top 
--- compute the X-covering (X = all variables in the store before we extended it) of this abstract store (one lvl or for all lvls?)
--- run the abstract interpreter for the expression using these stores as initial states
-abstractEvalWithState sto e = abstractEval (head $ generateStates e sto) e
+-- | extend the abstract store with all other variables in Exp, set all of their values to Top 
+--   compute the X-covering (X = all variables in the store before we extended it) of this abstract store
+--   run the abstract interpreter for the expression using these stores as initial states
+--   join the resulting values together
+abstractEvalWithState sto e = foldr join bottom (map (abstractEval e) (generateStates e sto))
 
 
 getVarsFromExp :: Exp -> [Ide]

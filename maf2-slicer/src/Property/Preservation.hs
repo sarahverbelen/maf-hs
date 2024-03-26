@@ -5,6 +5,7 @@ module Property.Preservation(preserve) where
 import Property.Agreement
 import Dependency.State
 import Dependency.Lattice
+import Lattice
 import Syntax.Scheme.AST
 import Analysis.Scheme
 
@@ -57,7 +58,7 @@ preserveBinding (var, e) = do   b <- preserve' e
                                 put (s', g)
                                 -- if this variable is in the agreement, we need to check if the property is preserved by the assignment 
                                 let ideEq = (\a b -> name a == name b)    
-                                let b' = if any (ideEq var) g then v `elem` Map.lookup var s else True 
+                                let b' = if any (ideEq var) g then (if v == top then False else v `elem` Map.lookup var s) else True 
                                 return $ b && b'
 
 -- |PP-IF (assumes no side effects in condition)
