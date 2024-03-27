@@ -25,9 +25,9 @@ xCovering x s = fmap Map.fromList (sequence $ groupBy (\ a b -> fst a == fst b) 
                 where (inX, notInX) = partition (\a -> elem (fst a) x) (Map.toList s)
 
 -- | TODO
-abstractEval :: Exp -> AbstractSto v -> v
+abstractEval :: (RefinableLattice v) => Exp -> AbstractSto v -> v
 -- | finds the value of the expression in the given abstract state
-abstractEval = undefined
+abstractEval e s = top
 
 generateStates :: (RefinableLattice v) => Exp -> AbstractSto v -> [AbstractSto v] -- TODO: should this go only one level or should it go until bottom?
 -- | generates a set of states from a state by extending it with the variables in the expression 
