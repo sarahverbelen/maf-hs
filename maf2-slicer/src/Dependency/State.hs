@@ -15,6 +15,11 @@ import Data.List (groupBy, partition)
 
 type AbstractSto v = Map.Map Ide v
 
+-- | TODO
+abstractEval :: (RefinableLattice v) => Exp -> AbstractSto v -> v
+-- | finds the value of the expression in the given abstract state
+abstractEval _ _ = top
+
 covering :: (RefinableLattice v) => AbstractSto v -> [AbstractSto v]
 -- | a covering of a state s is a set of refinements of that state such that all possible values are accounted for
 covering s = fmap Map.fromList (sequence $ groupBy (\ a b -> fst a == fst b) [(k, v') | (k, v) <- Map.toList s, v' <- refine v ++ [v]])
@@ -23,11 +28,6 @@ xCovering :: (RefinableLattice v) => [Ide] -> AbstractSto v -> [AbstractSto v]
 -- | values of variables outside some set X take values that are the same as either the corresponding values in s or their direct subvalues
 xCovering x s = fmap Map.fromList (sequence $ groupBy (\ a b -> fst a == fst b) ([(k, v') | (k, v) <- notInX, v' <- refine v ++ [v]] ++ inX))
                 where (inX, notInX) = partition (\a -> elem (fst a) x) (Map.toList s)
-
--- | TODO
-abstractEval :: (RefinableLattice v) => Exp -> AbstractSto v -> v
--- | finds the value of the expression in the given abstract state
-abstractEval _ _ = top
 
 generateStates :: (RefinableLattice v) => Exp -> AbstractSto v -> [AbstractSto v]
 -- | generates a set of states from a state by extending it with the variables in the expression 
@@ -44,7 +44,6 @@ abstractEvalWithState :: (RefinableLattice v) => AbstractSto v -> Exp -> v
 --   run the abstract interpreter for the expression using these stores as initial states
 --   join the resulting values together to get the final value
 abstractEvalWithState sto e = foldr join bottom (map (abstractEval e) (generateStates e sto))
-
 
 getVarsFromExp :: Exp -> [Ide]
 getVarsFromExp (Var x)             = [x]

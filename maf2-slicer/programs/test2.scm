@@ -1,5 +1,8 @@
-(define a 1)
-(define b 2)
-(define c 3)
-(define d (- (+ a b) a)) 
-d 
+(let ((x 2)
+      (y 1)
+      (z 7))
+  (if (> z 6)       
+    (set! y (* y 2))    
+    (set! y (* y -2)))  
+  (set! x (* y x))
+  x)
