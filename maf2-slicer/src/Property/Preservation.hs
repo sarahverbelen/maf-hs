@@ -15,13 +15,12 @@ type PreserveState v = State (AbstractSto v, Agreement) Bool
 
 -- | PP(g, e)
 preserve :: (RefinableLattice v) => AbstractSto v -> Agreement -> Exp -> Bool
-preserve p g e = evalState (preserve' e) (p, g)
+preserve s g e = evalState (preserve' e) (s, g)
 
 
 preserve' :: forall v . (RefinableLattice v) => Exp -> PreserveState v
 -- | PP-ASSIGN
 preserve' (Dfv var e _) = preserveBinding (var, e)
---preserve' (Dff var args bdy _) =  todo?
 preserve' (Set var e _) = preserveBinding (var, e)
 -- | PP-LET
 preserve' (Let binds bdy _) = preserveLet binds bdy
@@ -35,7 +34,7 @@ preserve' (Bgn (e:es) x) = do b <- preserve' e
                               return $ b && b'
 -- |PP-IF
 preserve' (Iff b c a _) = preserveIf b c a
--- | PP-APP * (TODO)
+-- | PP-APP *
 preserve' (App _ _ _) = return False
 -- | PP-SKIP (all other expressions don't modify the state and as such are equivalent to skip)
 preserve' _ = return True

@@ -16,5 +16,5 @@ slice p c = removeRedundantExp p $ labelSequence @v p c
 
 removeRedundantExp :: Exp -> Labels -> Exp 
 -- | makes use of the labels to decide what expressions to remove
--- an expression can be removed if its label is the same as the label of the following expression
-removeRedundantExp = undefined
+-- an expression can be removed if it preserves the properties in its label
+removeRedundantExp e@()

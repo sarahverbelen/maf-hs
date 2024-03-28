@@ -27,9 +27,9 @@ xCovering x s = fmap Map.fromList (sequence $ groupBy (\ a b -> fst a == fst b) 
 -- | TODO
 abstractEval :: (RefinableLattice v) => Exp -> AbstractSto v -> v
 -- | finds the value of the expression in the given abstract state
-abstractEval e s = top
+abstractEval _ _ = top
 
-generateStates :: (RefinableLattice v) => Exp -> AbstractSto v -> [AbstractSto v] -- TODO: should this go only one level or should it go until bottom?
+generateStates :: (RefinableLattice v) => Exp -> AbstractSto v -> [AbstractSto v]
 -- | generates a set of states from a state by extending it with the variables in the expression 
 --   and computing the x-covering (keeping the variables already in the store unchanged)
 generateStates e s = xCovering (Map.keys s) (extendState (getVarsFromExp e) s)
@@ -42,7 +42,7 @@ abstractEvalWithState :: (RefinableLattice v) => AbstractSto v -> Exp -> v
 -- | extend the abstract store with all other variables in Exp, set all of their values to Top 
 --   compute the X-covering (X = all variables in the store before we extended it) of this abstract store
 --   run the abstract interpreter for the expression using these stores as initial states
---   join the resulting values together
+--   join the resulting values together to get the final value
 abstractEvalWithState sto e = foldr join bottom (map (abstractEval e) (generateStates e sto))
 
 
@@ -60,3 +60,4 @@ getVarsFromExp (Ltr bds bdy _)     = map fst bds ++ getVarsFromExp bdy
 getVarsFromExp (Lrr bds bdy _)     = map fst bds ++ getVarsFromExp bdy
 getVarsFromExp (App _ ops _)      = foldr (\e l -> l ++ getVarsFromExp e) [] ops
 getVarsFromExp _                   = []
+
