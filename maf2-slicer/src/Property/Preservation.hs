@@ -11,14 +11,14 @@ import Syntax.Scheme.AST
 import qualified Data.Map as Map
 import Control.Monad.State
 
-type PreserveState v = State (AbstractSto v, Agreement) Bool
+type PreserveState = State (AbstractSto V, Agreement) Bool
 
 -- | PP(g, e)
-preserve :: (RefinableLattice v) => AbstractSto v -> Agreement -> Exp -> Bool
+preserve :: AbstractSto V -> Agreement -> Exp -> Bool
 preserve s g e = evalState (preserve' e) (s, g)
 
 
-preserve' :: forall v . (RefinableLattice v) => Exp -> PreserveState v
+preserve' :: Exp -> PreserveState
 -- | PP-ASSIGN
 preserve' (Dfv var e _) = preserveBinding (var, e)
 preserve' (Set var e _) = preserveBinding (var, e)
@@ -41,13 +41,13 @@ preserve' _ = return True
 
 
 -- | PP-LET
-preserveLet :: forall v . (RefinableLattice v) => [(Ide, Exp)] -> Exp -> PreserveState v
+preserveLet :: [(Ide, Exp)] -> Exp -> PreserveState
 preserveLet binds bdy = do  bs <- sequence $ map preserveBinding binds
                             b <- preserve' bdy 
                             return $ b && and bs
 
 -- | PP-ASSIGN              
-preserveBinding :: forall v . (RefinableLattice v) => (Ide, Exp) -> PreserveState v              
+preserveBinding :: (Ide, Exp) -> PreserveState             
 preserveBinding (var, e) = do   b <- preserve' e 
                                 (s, g) <- get
                                 let v = abstractEvalWithState s e
@@ -60,7 +60,7 @@ preserveBinding (var, e) = do   b <- preserve' e
                                 return $ b && b'
 
 -- |PP-IF (assumes no side effects in condition)
-preserveIf :: forall v . (RefinableLattice v) => Exp -> Exp -> Exp -> PreserveState v
+preserveIf :: Exp -> Exp -> Exp -> PreserveState
 preserveIf _ c a = do   (s, g) <- get 
                         let sc = s -- todo: update with info from condition
                         put (sc, g); bc <- preserve' c 

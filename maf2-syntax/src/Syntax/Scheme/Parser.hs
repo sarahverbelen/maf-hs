@@ -11,7 +11,7 @@ import qualified Text.ParserCombinators.Parsec.Token as Token
 import Text.Printf
 
 -- | Location information
-data Span = Span { filename :: String, line :: Int, column :: Int } deriving (Show, Ord, Eq, Generic) 
+data Span = Span { filename :: String, line :: Int, column :: Int } | NoSpan deriving (Show, Ord, Eq, Generic) 
 instance Hashable Span
 fromSourcePos :: SourcePos -> Span 
 fromSourcePos pos = Span {

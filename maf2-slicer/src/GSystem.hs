@@ -17,21 +17,21 @@ import qualified Data.Map as Map
 
 data Labels = Lett Agreement [Labels] Labels | If Agreement Labels Labels | Binding Agreement | Skip Agreement | Begin Agreement [Labels] deriving (Show, Eq)
 
-type LabelState v = State (AbstractSto v, Agreement) Labels
+type LabelState = State (AbstractSto V, Agreement) Labels
 
-labelSequence :: forall v . (RefinableLattice v) => Exp -> Agreement -> Labels
+labelSequence :: Exp -> Agreement -> Labels
 -- | label all statements in the sequence with agreements by backwards propagating the G-system rules
 labelSequence e g = evalState (labelExp' @v e) (mempty, g)
 
 -- | G-PP
-labelExp' :: forall v . (RefinableLattice v) => Exp -> LabelState v
+labelExp' :: Exp -> LabelState
 labelExp' e = do 
     (sto, g) <- get
     if (preserve sto g e)
         then do put (sto, g); return (Skip g)
         else do labelExp e
 
-labelExp :: forall v . (RefinableLattice v) => Exp -> LabelState v
+labelExp :: Exp -> LabelState
 -- | G-CONCAT
 labelExp (Bgn es _) = do 
     lbls <- sequence $ map labelExp' (reverse es) -- label the expressions back to front
@@ -53,14 +53,14 @@ labelExp (Lrr bds bdy _) = labelLet bds bdy
 labelExp _ = labelSkip
 
 -- | G-LET
-labelLet :: forall v. (RefinableLattice v) =>  [(Ide, Exp)] -> Exp -> LabelState v
+labelLet :: [(Ide, Exp)] -> Exp -> LabelState
 labelLet bds bdy = do lblBody <- labelExp' bdy -- label the body
                       lblBindings <- sequence $ map labelBinding (reverse bds) -- label the bindings in reverse order
                       (_, g) <- get 
                       return (Lett g (reverse lblBindings) lblBody)
 
 -- | G-ASSIGN
-labelBinding :: forall v . (RefinableLattice v) => (Ide, Exp) -> LabelState v
+labelBinding :: (Ide, Exp) -> LabelState
 labelBinding (var, e) = do  let ideEq = (\a b -> name a == name b)
                             let vars = nubBy ideEq $ getVarsFromExp e
                             (sto, g) <- get 
@@ -78,7 +78,7 @@ labelBinding (var, e) = do  let ideEq = (\a b -> name a == name b)
                             return (Binding g')
 
 -- | G-IF
-labelIf :: forall v . (RefinableLattice v) => Exp -> Exp -> Exp -> LabelState v
+labelIf :: Exp -> Exp -> Exp -> LabelState
 labelIf b c a   = do (sto, g) <- get -- improve: update state
                      lblC <- labelExp' c
                      (_, gc) <- get
@@ -91,5 +91,5 @@ labelIf b c a   = do (sto, g) <- get -- improve: update state
                      return (If gIf lblA lblC)
 
 -- | G-SKIP
-labelSkip :: LabelState v
+labelSkip :: LabelState
 labelSkip = do (sto, g) <- get; return (Skip g)

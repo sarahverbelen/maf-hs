@@ -50,6 +50,9 @@ instance Applicative CP where
     (Constant f) <*> (Constant a) = Constant (f a)
     _ <*> _ = Top
 
+instance (Ord a, Show a) => TopLattice (CP a) where 
+    top = Top    
+
 -- | Convert from a CP lattice to another abstract domain
 fromCP :: (TopLattice a, Domain a c) => CP c -> a
 fromCP Bottom       = bottom

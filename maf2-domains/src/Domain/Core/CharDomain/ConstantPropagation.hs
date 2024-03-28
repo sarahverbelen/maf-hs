@@ -44,3 +44,6 @@ instance (IntDomain i) => CharDomain (CPChar' i) where
    charLt a b = return $ bool $ liftA2 (<) (getCP a) (getCP b)
    charEqCI a b = return $ bool $ liftA2 (==) (toLower <$> getCP a) (toLower <$> getCP b)
    charLtCI a b = return $ bool $ liftA2 (<) (toLower <$> getCP a) (toLower <$> getCP b)
+
+instance TopLattice (CPChar' i) where 
+   top = CPChar' Top
