@@ -32,6 +32,7 @@ eval (Ltt bds bdy _)      = evalLetStar bds bdy
 eval (Ltr bds bdy _)      = evalLetRec bds bdy
 eval (Lrr bds bdy _)      = evalLetrecStar bds bdy
 eval e@(App op opr  _)    = evalApp e op opr
+eval (Set var exp _)      = eval exp >>= store @_ @_ @VrAdr @(Adr v) var >> return nil
 eval e                    = error $ "Unrecognized expression" ++ show e
 
 evalLet :: (SchemeDomain v, SchemeM m v) => [(Ide, Exp)] -> Exp -> m v
@@ -90,3 +91,8 @@ applyClo _ _ = error "invalid closure"
 
 applyPrim :: (SchemeDomain v, SchemeM m v) => Exp -> [v] -> String -> m v
 applyPrim f ags nam = run (primitive nam) f ags
+
+-- | Store the given value in the store using the an address
+-- allocator on the monadic stack.
+store :: forall m from t adr v . (AllocM m from t adr, StoreM m t adr v) => from -> v -> m adr
+store from v = alloc @_ @_ @t @adr from >>= (\adr -> writeAdr adr v >> pure adr)

@@ -10,15 +10,52 @@ import Dependency.Lattice
 
 import qualified Data.Map as Map hiding (partition)
 import Data.List (groupBy, partition)
+import Data.Set (Set)
 
+import Data.TypeLevel.Ghost
+import Analysis.Scheme
+import Control.SVar.ModX
+import Analysis.Scheme.Store
+import Domain.Scheme hiding (Exp)
+import Control.Monad.DomainError
 
+import Data.Functor.Identity
+import qualified Analysis.Scheme.Semantics as Semantics 
+
+import Data.Function ((&))
+import Analysis.Monad
 
 type AbstractSto v = Map.Map Ide v
 
+abstractStoToEnv :: AbstractSto v -> Map.Map String Ide
+abstractStoToEnv s = Map.fromList $ map (\(ide, v) -> (name ide, ide)) (Map.toList s)
+
 -- | TODO
-abstractEval :: (RefinableLattice v) => Exp -> AbstractSto v -> v
+abstractEval :: forall v . (RefinableLattice v) => Exp -> AbstractSto v -> v
 -- | finds the value of the expression in the given abstract state
-abstractEval _ _ = top
+abstractEval e s = analyze' (e, (abstractStoToEnv s), (), Ghost) $ fromValues s
+
+-- todo: make V with SignValue filled in (var = Ide, dep and ctx = ()), use this instead of v everywhere (should solve all ambiguity!)
+
+analyze' :: forall v . (Exp, Map.Map String Ide, (), GT ()) -> DSto () v -> v
+analyze' (exp, env, ctx, _) store = 
+       let ((Value v, (spawns, registers, triggers)), sto) = Semantics.eval exp
+              & runEvalT
+              & runMayEscape @_ @(Set DomainError)
+              & runCallT @v @()
+              & runStoreT @VrAdr @_ @v (values  store)
+              & runStoreT @StAdr @_ @(StrDom v) (strings store)
+              & runStoreT @PaAdr @_ @(PaiDom v) (pairs   store)
+              & runStoreT @VeAdr @_ @(VecDom v) (vecs    store)
+              & combineStores @_ @_ @_ @v
+              & runEnv env
+              & runAlloc @PaAdr undefined
+              & runAlloc @VeAdr undefined
+              & runAlloc @StAdr undefined
+              & runAlloc @VrAdr (const id)
+              & runCtx  ctx
+              & runIdentity
+       in v        
 
 covering :: (RefinableLattice v) => AbstractSto v -> [AbstractSto v]
 -- | a covering of a state s is a set of refinements of that state such that all possible values are accounted for
