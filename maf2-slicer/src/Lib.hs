@@ -14,7 +14,7 @@ import Lattice
 import Data.Maybe
 
 testX :: [Ide]
-testX = [Ide{name="d", span=Span{filename="SExpParser", line=4, column=1}} ]
+testX = [Ide{name="x", span=Span{filename="SExpParser", line=1, column=1}} ]
 
 testProgram :: String
 testProgram = "programs/test2.scm"
