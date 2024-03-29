@@ -98,7 +98,7 @@ deref = lookups lookupAdr
 
 --
 
-class (Monad m) => AllocM m from t adr  where
+class (Monad m) => AllocM m from t adr where
    alloc :: from -> m adr
 
 class (Monad m) => CallM m env v where
@@ -144,6 +144,9 @@ runEnv :: forall env m a .  env -> (EnvT env m) a -> m a
 runEnv initialEnv (EnvT m) = runReaderT m initialEnv
 
 ---
+
+-- instance {-# OVERLAPPING #-} (TypeError (Text "No CtxM found on stack" :$$: (ShowType ctx))) => CtxM (Identity) ctx
+
 
 newtype CtxT ctx m a = CtxT { getContextReader :: ReaderT ctx m a } deriving (MonadReader ctx, Monad, Applicative, MonadLayer, Functor)
 instance {-# OVERLAPPING #-} Monad m => CtxM (CtxT ctx m) ctx where

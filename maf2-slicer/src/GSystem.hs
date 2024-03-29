@@ -21,7 +21,7 @@ type LabelState = State (AbstractSto V, Agreement) Labels
 
 labelSequence :: Exp -> Agreement -> Labels
 -- | label all statements in the sequence with agreements by backwards propagating the G-system rules
-labelSequence e g = evalState (labelExp' @v e) (mempty, g)
+labelSequence e g = evalState (labelExp' e) (mempty, g)
 
 -- | G-PP
 labelExp' :: Exp -> LabelState

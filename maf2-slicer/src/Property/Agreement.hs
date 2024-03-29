@@ -12,7 +12,7 @@ import Data.List.Extra
 
 type Agreement = [Ide] -- a list of the variables that have to have the same abstract value 
 
-agree :: Agreement -> AbstractSto v -> AbstractSto V -> Bool
+agree :: Agreement -> AbstractSto V -> AbstractSto V -> Bool
 -- | two states agree <=> every property defined by the agreement is the same in both states
 agree g s1 s2 = foldr (\k b -> b && (Map.lookup k s1) == (Map.lookup k s2)) True g
 

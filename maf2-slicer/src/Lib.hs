@@ -6,10 +6,12 @@ import Prelude hiding (span)
 
 import Data.List (intercalate)
 import Dependency.State
+import Dependency.Lattice
 import GSystem
 import Syntax.Scheme.AST
 import Syntax.Scheme
 import Lattice
+import Slicer
 
 import Data.Maybe
 
@@ -28,4 +30,4 @@ testLabeling = do
     let e = fromJust $ parseString contents
     let labeledExp = labelSequence e testX
     putStrLn $ show e
-    putStrLn $ show labeledExp
+    putStrLn $ show $ slice e testX

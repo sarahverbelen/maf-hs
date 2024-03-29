@@ -57,16 +57,16 @@ analyze' (exp, env, ctx, _) store =
               & runEvalT
               & runMayEscape @_ @(Set DomainError)
               & runCallT @V @()
-              & runStoreT @VrAdr @_ @V (values  store)
-              & runStoreT @StAdr @_ @(StrDom V) (strings store)
-              & runStoreT @PaAdr @_ @(PaiDom V) (pairs   store)
-              & runStoreT @VeAdr @_ @(VecDom V) (vecs    store)
+              & runStoreT @VrAdr (values  store)
+              & runStoreT @StAdr (strings store)
+              & runStoreT @PaAdr (pairs   store)
+              & runStoreT @VeAdr (vecs    store)
               & combineStores @_ @_ @_ @V
               & runEnv env
-              & runAlloc @PaAdr undefined
-              & runAlloc @VeAdr undefined
-              & runAlloc @StAdr undefined
-              & runAlloc @VrAdr (const id)
-              & runCtx  ctx
+              & runAlloc @PaAdr @Exp (const $ const ())
+              & runAlloc @VeAdr @Exp (const $ const ())
+              & runAlloc @StAdr @Exp (const $ const ())
+              & runAlloc @VrAdr @Ide @() @Ide (\from ctx -> from)
+              & runCtx @() ctx
               & runIdentity
        in v      

@@ -21,8 +21,6 @@ instance AtomicLattice Sign where
     atom Neg = True 
     atom _ = False  
 
---- REFINEMENTS
-
 class (TopLattice v) => RefinableLattice v where 
 -- | refine returns a list of all elements that are immediate predecessors   
     refine :: v -> [v] 
@@ -49,10 +47,11 @@ instance (RefinableLattice a) => RefinableLattice (CPChar' a) where
 instance (TopLattice a) => TopLattice (Maybe a) where 
     top = Just top
 
-instance Address Ide
-instance Address ()
 
 type V = SignValue () Ide Exp
+
+instance Address Ide
+instance Address ()
 
 instance (TopLattice (ModularSchemeValue r i c b pai vec str var exp env), RefinableLattice r, RefinableLattice i, RefinableLattice c, RefinableLattice b)
     => RefinableLattice (ModularSchemeValue r i c b pai vec str var exp env) where
