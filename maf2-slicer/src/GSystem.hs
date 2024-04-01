@@ -66,7 +66,7 @@ labelBinding (var, e) = do  (sto, g) <- get
                             -- then the new agreement contains all variables that this expression is dependent on + all of the previous ones except the current one being assigned
                             let g' = if var `elem` g then union (delete var g) $ dependencies e sto else g
                             -- else the agreement stays the same
-                            let v = abstractEvalWithState sto e
+                            let v = abstractEval e sto
                             -- update the state
                             let sto' = Map.insert var v sto
                             put (sto', g')

@@ -2,7 +2,7 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Dependency.State(AbstractSto, covering, xCovering, abstractEval, abstractEvalWithState, getVarsFromExp', generateStates, extendState, extendStateForExp) where 
+module Dependency.State(AbstractSto, covering, xCovering, abstractEval, abstractEvalForCovering, getVarsFromExp', generateStates, extendState, extendStateForExp) where 
 
 import Syntax.Scheme
 import Lattice
@@ -33,12 +33,12 @@ extendState vars sto = foldr (\var sto' -> Map.insertWith (flip const) var top s
 extendStateForExp :: Exp -> AbstractSto V -> AbstractSto V 
 extendStateForExp e s = extendState (getVarsFromExp' e) s
 
-abstractEvalWithState :: AbstractSto V -> Exp -> V
+abstractEvalForCovering :: Exp -> AbstractSto V -> V
 -- | extend the abstract store with all other variables in Exp, set all of their values to Top 
 --   compute the X-covering (X = all variables in the store before we extended it) of this abstract store
 --   run the abstract interpreter for the expression using these stores as initial states
 --   join the resulting values together to get the final value
-abstractEvalWithState sto e = foldr join bottom (map (abstractEval e) (generateStates e sto))
+abstractEvalForCovering e sto = foldr join bottom (map (abstractEval e) (generateStates e sto))
 
 getVarsFromExp' :: Exp -> [Ide]
 getVarsFromExp' = (nubBy (\a b -> name a == name b)) . getVarsFromExp

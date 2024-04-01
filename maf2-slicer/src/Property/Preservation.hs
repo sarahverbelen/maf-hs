@@ -50,12 +50,12 @@ preserveLet binds bdy = do  bs <- sequence $ map preserveBinding binds
 preserveBinding :: (Ide, Exp) -> PreserveState             
 preserveBinding (var, e) = do   b <- preserve' e 
                                 (s, g) <- get
-                                let v = abstractEvalWithState s e
+                                let v = abstractEvalForCovering e s
                                 -- update the value in our abstract state
                                 let s' = Map.insert var v s
                                 put (s', g)
                                 -- if this variable is in the agreement, we need to check if the property is preserved by the assignment     
-                                let b' = if any (== var) g then (if v == top then False else v `elem` Map.lookup var s) else True 
+                                let b' = var `elem` g || ((v /= top) && ((Map.lookup var s) /= Nothing) && (v `elem` Map.lookup var s))
                                 return $ b && b'
 
 -- |PP-IF (assumes no side effects in condition)
