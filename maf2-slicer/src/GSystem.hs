@@ -2,7 +2,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 
-module GSystem(labelSequence, Labels(..)) where 
+module GSystem(labelSequence, Labels(..), isSkip) where 
 
 import Property.Agreement 
 import Property.Preservation
@@ -18,6 +18,10 @@ import qualified Data.Map as Map
 data Labels = Lett Agreement [Labels] Labels | If Agreement Labels Labels | Binding Agreement | Skip Agreement | Begin Agreement [Labels] deriving (Show, Eq)
 
 type LabelState = State (AbstractSto V, Agreement) Labels
+
+isSkip :: Labels -> Bool 
+isSkip (Skip _) = True 
+isSkip _ = False
 
 labelSequence :: Exp -> Agreement -> Labels
 -- | label all statements in the sequence with agreements by backwards propagating the G-system rules
