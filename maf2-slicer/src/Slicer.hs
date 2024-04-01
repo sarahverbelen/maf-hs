@@ -22,7 +22,11 @@ slice p c = sliceExp p $ labelSequence p c
 type SliceState = State (AbstractSto V, Labels) Exp 
 
 sliceExp :: Exp -> Labels -> Exp 
-sliceExp e lbls = evalState (sliceExp' e) (mempty, lbls) 
+sliceExp e lbls = evalState (sliceExp'' e) (mempty, lbls) 
+
+sliceExp'' :: Exp -> SliceState 
+sliceExp'' e = do (_, lbls) <- get 
+                  if isSkip lbls then return Empty else sliceExp' e
 
 sliceExp' :: Exp -> SliceState 
 sliceExp' e@(Let bds bdy s) = sliceLet e bds bdy s Let 
@@ -32,20 +36,34 @@ sliceExp' e@(Lrr bds bdy s) = sliceLet e bds bdy s Lrr
 sliceExp' e@(Dfv _ _ _)     = sliceAssignment e
 sliceExp' e@(Set _ _ _)     = sliceAssignment e   
 sliceExp' (Bgn es s)        = do    (_, lbl) <- get -- possible improvement: remove whole begin if it preserves its label
-                                    let (Begin _ lbls) = lbl
-                                    return (Bgn (map (uncurry (removeRedundantExp)) (zip es lbls)) s)                                
-sliceExp' e                 = do    (_, lbls) <- get
-                                    if isSkip lbls then return Empty else return e
+                                    let (Begin l lbls) = lbl
+                                    return (Bgn (map (uncurry (sliceExp)) (zip es lbls)) s)                                
 
 
 sliceAssignment :: Exp -> SliceState 
 sliceAssignment e = do  (sto, lbl) <- get
                         let (Binding g) = lbl
-                        if (preserve sto g e) then return Empty else return e
+                        let (b, sto') = preserveWithSto sto g e
+                        put (sto', lbl)
+                        if b then return Empty else return e
 
 sliceLet :: Exp -> [(Ide, Exp)] -> Exp -> Span -> ([(Ide, Exp)] -> Exp -> Span -> Exp) -> SliceState
-sliceLet e bds bdy s let' = do  (_, l) <- get 
+sliceLet e bds bdy s let' = do  (sto, l) <- get 
                                 let (Lett g lbls lbl) = l
-                                let bdy' = (removeRedundantExp bdy lbl)
-                                let bds' = map fst $ filter (\((var, exp), (Binding g')) -> not $ preserve mempty g' (Set var exp NoSpan)) $ zip bds lbls
+                                let bdy' = (sliceExp bdy lbl)
+                                let (bds', sto') = runState (sliceBindings bds lbls) sto
+                                put (sto', l)
                                 if (preserve mempty g e) then return Empty else return $ let' bds' bdy' s 
+
+type BindingState = State (AbstractSto V) [(Ide, Exp)]
+
+sliceBindings :: [(Ide, Exp)] -> [Labels] -> BindingState
+sliceBindings bds lbls = do bds' <- mapM sliceBinding (zip bds lbls)
+                            return $ concat bds'
+
+
+sliceBinding :: ((Ide, Exp), Labels) -> BindingState 
+sliceBinding ((var, exp), (Binding g)) = do    s <- get
+                                               let (b, s') = preserveWithSto s g (Set var exp NoSpan) 
+                                               put s'
+                                               if b then return [] else return [(var, exp)]      
