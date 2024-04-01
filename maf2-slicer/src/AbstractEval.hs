@@ -21,6 +21,7 @@ import Control.Monad.DomainError
 
 import Data.Functor.Identity
 import qualified Analysis.Scheme.Semantics as Semantics 
+import Analysis.Scheme.Primitives
 
 import Data.Function ((&))
 import Analysis.Monad
@@ -28,11 +29,11 @@ import Analysis.Monad
 type AbstractSto v = Map.Map Ide v
 
 abstractStoToEnv :: AbstractSto V -> Map.Map String Ide -- temporary: need to keep track of environment as well as store
-abstractStoToEnv s = Map.fromList $ map (\(ide, v) -> (name ide, ide)) (Map.toList s)
+abstractStoToEnv s = Map.union (Map.fromList $ map (\(ide, v) -> (name ide, ide)) (Map.toList s)) (initialEnv prmAdr)
 
 abstractEval :: Exp -> AbstractSto V -> V
 -- | finds the abstract value of the expression in the given abstract state
-abstractEval e s = analyze' (e, (abstractStoToEnv s), (), Ghost) $ fromValues s
+abstractEval e s = analyze' (e, abstractStoToEnv s, (), Ghost) $ fromValues s
 
 instance (Dependency () ()) where 
        dep = undefined
@@ -42,7 +43,7 @@ instance (Dependency Ide ()) where
 
 instance VarAdr Ide V () () where
        retAdr = undefined
-       prmAdr = undefined  
+       prmAdr s = Ide s NoSpan 
 
 instance SchemeAlloc () Ide V () where
        allocVar x _ = x 
@@ -53,7 +54,7 @@ instance SchemeAlloc () Ide V () where
 
 analyze' :: (Exp, Map.Map String Ide, (), GT ()) -> DSto () V -> V
 analyze' (exp, env, ctx, _) store = 
-       let ((Value v, (spawns, registers, triggers)), sto) = Semantics.eval exp
+       let ((Value v, _), _) = Semantics.eval exp
               & runEvalT
               & runMayEscape @_ @(Set DomainError)
               & runCallT @V @()
