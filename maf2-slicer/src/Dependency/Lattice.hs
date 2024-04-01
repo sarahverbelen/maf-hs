@@ -24,6 +24,7 @@ instance AtomicLattice Sign where
 
 instance (AtomicLattice a) => AtomicLattice (Maybe a) where 
     atom (Just x) = atom x
+    atom Nothing = True
 
 instance (AtomicLattice a) => AtomicLattice (CPChar' a) where 
     atom (CPChar' x) = atom x         
@@ -77,4 +78,4 @@ instance (TopLattice (ModularSchemeValue r i c b pai vec str var exp env), Refin
 
 instance (AtomicLattice r, AtomicLattice i, AtomicLattice c, AtomicLattice b, RealDomain r, IntDomain i, CharDomain c, BoolDomain b, Address pai, Address vec, Address str, Ord env, Ord exp, Show env)
     => AtomicLattice (ModularSchemeValue r i c b pai vec str var exp env) where
-        atom v = (atom $ real v) || (atom $ integer v) || (atom $ character v) || (atom $ boolean v)
+        atom v = (atom $ real v) && (atom $ integer v) && (atom $ character v) && (atom $ boolean v)

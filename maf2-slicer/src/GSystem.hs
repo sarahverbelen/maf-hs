@@ -62,8 +62,10 @@ labelLet bds bdy = do lblBody <- labelExp' bdy -- label the body
 -- | G-ASSIGN
 labelBinding :: (Ide, Exp) -> LabelState
 labelBinding (var, e) = do  (sto, g) <- get 
-                            -- the new agreement contains all variables that this expression is dependent on + all of the previous ones except the current one being assigned
-                            let g' = union (delete var g) $ dependencies e sto
+                            -- if the assigned variable is in the agreement
+                            -- then the new agreement contains all variables that this expression is dependent on + all of the previous ones except the current one being assigned
+                            let g' = if var `elem` g then union (delete var g) $ dependencies e sto else g
+                            -- else the agreement stays the same
                             let v = abstractEvalWithState sto e
                             -- update the state
                             let sto' = Map.insert var v sto
@@ -78,7 +80,7 @@ labelIf b c a   = do (sto, g) <- get -- improve: update state
                      put (sto, g) -- improve: update state
                      lblA <- labelExp' a
                      (_, ga) <- get
-                     let gb = getVarsFromExp b -- condition agreement (if agree on gb, same branch taken) (could be more precise)
+                     let gb = getVarsFromExp' b -- condition agreement (if agree on gb, same branch taken) (could be more precise)
                      let gIf = union ga $ union gc gb
                      put (sto, gIf)
                      return (If gIf lblA lblC)

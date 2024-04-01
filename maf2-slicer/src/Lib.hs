@@ -18,7 +18,7 @@ testX :: [Ide]
 testX = [Ide{name="x", span=NoSpan} ]
 
 testProgram :: String
-testProgram = "programs/test2.scm"
+testProgram = "programs/test.scm"
 
 printStores :: [AbstractSto V] -> IO ()
 printStores s = putStrLn $ intercalate "\n" (map show s)
@@ -28,5 +28,6 @@ testLabeling = do
     contents <- readFile testProgram 
     let e = fromJust $ parseString contents
     putStrLn $ show e
+    -- putStrLn $ show (getVarsFromExp' e)
     putStrLn $ show $ labelSequence e testX
-    -- putStrLn $ show $ slice e testX
+    putStrLn $ show $ slice e testX

@@ -52,9 +52,13 @@ instance SchemeAlloc () Ide V () where
        allocVec = undefined
        allocStr = undefined   
 
+getValue :: MayEscape (Set DomainError) V -> V 
+getValue (Value v) = v
+getValue _ = bottom
+
 analyze' :: (Exp, Map.Map String Ide, (), GT ()) -> DSto () V -> V
-analyze' (exp, env, ctx, _) store = 
-       let ((Value v, _), _) = Semantics.eval exp
+analyze' (exp, env, ctx, _) store =  
+       let ((res, _), _) = Semantics.eval exp
               & runEvalT
               & runMayEscape @_ @(Set DomainError)
               & runCallT @V @()
@@ -69,5 +73,5 @@ analyze' (exp, env, ctx, _) store =
               & runAlloc @StAdr @Exp (const $ const ())
               & runAlloc @VrAdr @Ide @() @Ide (\from ctx -> from)
               & runCtx @() ctx
-              & runIdentity
-       in v      
+              & runIdentity      
+       in getValue res
