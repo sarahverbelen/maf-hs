@@ -54,9 +54,8 @@ preserveBinding (var, e) = do   b <- preserve' e
                                 -- update the value in our abstract state
                                 let s' = Map.insert var v s
                                 put (s', g)
-                                -- if this variable is in the agreement, we need to check if the property is preserved by the assignment 
-                                let ideEq = (\ia ib -> name ia == name ib)    
-                                let b' = if any (ideEq var) g then (if v == top then False else v `elem` Map.lookup var s) else True 
+                                -- if this variable is in the agreement, we need to check if the property is preserved by the assignment     
+                                let b' = if any (== var) g then (if v == top then False else v `elem` Map.lookup var s) else True 
                                 return $ b && b'
 
 -- |PP-IF (assumes no side effects in condition)

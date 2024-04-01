@@ -29,4 +29,4 @@ testLabeling = do
     let e = fromJust $ parseString contents
     putStrLn $ show e
     putStrLn $ show $ labelSequence e testX
-    putStrLn $ show $ slice e testX
+    -- putStrLn $ show $ slice e testX
