@@ -8,11 +8,11 @@ import Property.Agreement
 import Property.Preservation
 import Dependency.State
 import Dependency.Lattice
+import Dependency.Dependency
 import Syntax.Scheme.AST
 
 import Control.Monad.State
-import Data.Tuple.Extra (snd3)
-import Data.List (union, subsequences, nubBy, delete)
+import Data.List (union, delete)
 import qualified Data.Map as Map
 
 data Labels = Lett Agreement [Labels] Labels | If Agreement Labels Labels | Binding Agreement | Skip Agreement | Begin Agreement [Labels] deriving (Show, Eq)
@@ -61,16 +61,9 @@ labelLet bds bdy = do lblBody <- labelExp' bdy -- label the body
 
 -- | G-ASSIGN
 labelBinding :: (Ide, Exp) -> LabelState
-labelBinding (var, e) = do  let ideEq = (\a b -> name a == name b)
-                            let vars = nubBy ideEq $ getVarsFromExp e
-                            (sto, g) <- get 
-                            -- we need to figure out what variables the expression is dependent on
-                            let gs = [g' | g' <- subsequences $ vars] 
-                            -- if the current variable being assigned is not in the agreement, then the agreement will be unchanged
-                            -- otherwise, we check which variables need to have the same abstract value to have the same result for the expression
-                            -- these variables will then be in the new agreement
-                            let gs' = if any (ideEq var) g then filter (allStatesAgreeOn e sto) gs else [g]
-                            let g' = union (delete var g) $ head gs' -- the new agreement needs to be as precise as g on all variables except the current one being assigned
+labelBinding (var, e) = do  (sto, g) <- get 
+                            -- the new agreement contains all variables that this expression is dependent on + all of the previous ones except the current one being assigned
+                            let g' = union (delete var g) $ dependencies e sto
                             let v = abstractEvalWithState sto e
                             -- update the state
                             let sto' = Map.insert var v sto
@@ -92,4 +85,4 @@ labelIf b c a   = do (sto, g) <- get -- improve: update state
 
 -- | G-SKIP
 labelSkip :: LabelState
-labelSkip = do (sto, g) <- get; return (Skip g)
+labelSkip = do (_, g) <- get; return (Skip g)

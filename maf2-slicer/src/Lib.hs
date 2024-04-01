@@ -10,13 +10,12 @@ import Dependency.Lattice
 import GSystem
 import Syntax.Scheme.AST
 import Syntax.Scheme
-import Lattice
 import Slicer
 
 import Data.Maybe
 
 testX :: [Ide]
-testX = [Ide{name="x", span=Span{filename="SExpParser", line=1, column=1}} ]
+testX = [Ide{name="x", span=NoSpan} ]
 
 testProgram :: String
 testProgram = "programs/test2.scm"
@@ -28,6 +27,6 @@ testLabeling :: IO ()
 testLabeling = do 
     contents <- readFile testProgram 
     let e = fromJust $ parseString contents
-    let labeledExp = labelSequence e testX
     putStrLn $ show e
+    putStrLn $ show $ labelSequence e testX
     putStrLn $ show $ slice e testX

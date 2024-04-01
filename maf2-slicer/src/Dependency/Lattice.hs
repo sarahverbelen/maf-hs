@@ -21,6 +21,13 @@ instance AtomicLattice Sign where
     atom Neg = True 
     atom _ = False  
 
+
+instance (AtomicLattice a) => AtomicLattice (Maybe a) where 
+    atom (Just x) = atom x
+
+instance (AtomicLattice a) => AtomicLattice (CPChar' a) where 
+    atom (CPChar' x) = atom x         
+
 class (TopLattice v) => RefinableLattice v where 
 -- | refine returns a list of all elements that are immediate predecessors   
     refine :: v -> [v] 
@@ -45,8 +52,7 @@ instance (RefinableLattice a) => RefinableLattice (CPChar' a) where
     refine (CPChar' x) = [CPChar' a | a <- refine x]
  
 instance (TopLattice a) => TopLattice (Maybe a) where 
-    top = Just top
-
+    top = Just top 
 
 type V = SignValue () Ide Exp
 
@@ -68,3 +74,7 @@ instance (TopLattice (ModularSchemeValue r i c b pai vec str var exp env), Refin
                 unspecified = unspecified v,
                 primitives = primitives v
         } | r <- refine $ real v, i <- refine $ integer v, c <- refine $ character v, b <- refine $ boolean v]
+
+instance (AtomicLattice r, AtomicLattice i, AtomicLattice c, AtomicLattice b, RealDomain r, IntDomain i, CharDomain c, BoolDomain b, Address pai, Address vec, Address str, Ord env, Ord exp, Show env)
+    => AtomicLattice (ModularSchemeValue r i c b pai vec str var exp env) where
+        atom v = (atom $ real v) || (atom $ integer v) || (atom $ character v) || (atom $ boolean v)

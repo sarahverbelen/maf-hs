@@ -31,7 +31,7 @@ abstractStoToEnv :: AbstractSto V -> Map.Map String Ide -- temporary: need to ke
 abstractStoToEnv s = Map.fromList $ map (\(ide, v) -> (name ide, ide)) (Map.toList s)
 
 abstractEval :: Exp -> AbstractSto V -> V
--- | finds the value of the expression in the given abstract state
+-- | finds the abstract value of the expression in the given abstract state
 abstractEval e s = analyze' (e, (abstractStoToEnv s), (), Ghost) $ fromValues s
 
 instance (Dependency () ()) where 

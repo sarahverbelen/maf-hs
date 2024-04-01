@@ -26,6 +26,7 @@ source-repository head
 library
   exposed-modules:
       AbstractEval
+      Dependency.Dependency
       Dependency.Lattice
       Dependency.State
       GSystem

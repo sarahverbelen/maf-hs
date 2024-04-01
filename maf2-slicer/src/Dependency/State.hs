@@ -2,7 +2,7 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Dependency.State(AbstractSto, covering, xCovering, abstractEval, abstractEvalWithState, getVarsFromExp, generateStates) where 
+module Dependency.State(AbstractSto, covering, xCovering, abstractEval, abstractEvalWithState, getVarsFromExp, generateStates, extendState, extendStateForExp) where 
 
 import Syntax.Scheme
 import Lattice
@@ -29,6 +29,9 @@ generateStates e s = xCovering (Map.keys s) (extendState (getVarsFromExp e) s)
 extendState :: [Ide] -> AbstractSto V -> AbstractSto V 
 -- | adds a list of variables to an abstract store and sets all their values to top (if they weren't in the store yet)
 extendState vars sto = foldr (\var sto' -> Map.insertWith (flip const) var top sto') sto vars
+
+extendStateForExp :: Exp -> AbstractSto V -> AbstractSto V 
+extendStateForExp e s = extendState (getVarsFromExp e) s
 
 abstractEvalWithState :: AbstractSto V -> Exp -> V
 -- | extend the abstract store with all other variables in Exp, set all of their values to Top 
