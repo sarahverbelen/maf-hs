@@ -253,10 +253,10 @@ data ModularSchemeValue r i c b pai vec str var exp env = ModularSchemeValue {
 
 instance (SplitLattice (ModularSchemeValue r i c b pai vec str var exp env), Show r, Show i, Show c, Show b, Show exp) => Show (ModularSchemeValue r i c b pai vec str var exp env) where
    show = intercalate "," . Set.toList . Set.map select . split
-      where select ModularSchemeValue { real = Just r } = "real ↦ "++ show r
-            select ModularSchemeValue  { integer = Just i } = "integer ↦ " ++ show i
-            select ModularSchemeValue { character = Just c } = "character ↦ " ++ show c
-            select ModularSchemeValue { boolean = Just b } = "boolean ↦ " ++ show b
+      where select ModularSchemeValue { real = Just r } = "real -> "++ show r
+            select ModularSchemeValue  { integer = Just i } = "integer -> " ++ show i
+            select ModularSchemeValue { character = Just c } = "character -> " ++ show c
+            select ModularSchemeValue { boolean = Just b } = "boolean -> " ++ show b
             select ModularSchemeValue { paiPtr = Just _ } = "<pair>"
             select ModularSchemeValue { vecPtr = Just _ } = "<vector>"
             select ModularSchemeValue { strPtr = Just _ } = "<string>"
@@ -265,8 +265,8 @@ instance (SplitLattice (ModularSchemeValue r i c b pai vec str var exp env), Sho
             select ModularSchemeValue { null = Just _ } = "'()"
             select ModularSchemeValue { unspecified = Just _ } = "<unspecified>"
             select ModularSchemeValue { primitives = Just prms } =
-               "primitive ↦ {" ++ intercalate "," (Set.toList (Set.map show prms)) ++ "}"
-            select _ = "⊥"
+               "primitive -> {" ++ intercalate "," (Set.toList (Set.map show prms)) ++ "}"
+            select _ = "bottom"
 
 instance Default (ModularSchemeValue r i c b pai vec str var exp env) where
    def = ModularSchemeValue Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
@@ -342,7 +342,7 @@ instance (Ord exp, Ord i, Ord b, Ord c, Ord r, RealDomain r, IntDomain i, CharDo
 instance (Ord exp, Ord i, Ord b, Ord c, Ord r, RealDomain r, IntDomain i, CharDomain c, BoolDomain b, TopLattice r, TopLattice i, TopLattice c, TopLattice b, Address pai, Address vec, Address str, Ord env, Show env) =>
    TopLattice (ModularSchemeValue r i c b pai vec str var exp env) where
 
-   top = ModularSchemeValue (Just top) (Just top) (Just top) (Just top) Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+   top = ModularSchemeValue (Just top) (Just top) Nothing (Just top) Nothing Nothing Nothing Nothing Nothing Nothing Nothing
 
 ---
 

@@ -65,7 +65,7 @@ instance (TopLattice (ModularSchemeValue r i c b pai vec str var exp env), Refin
         refine v = [ModularSchemeValue {
                 real = r,
                 integer = i,
-                character = c,
+                character = character v,
                 boolean = b,
                 paiPtr = paiPtr v,
                 vecPtr = vecPtr v,
@@ -74,8 +74,8 @@ instance (TopLattice (ModularSchemeValue r i c b pai vec str var exp env), Refin
                 null = null v,
                 unspecified = unspecified v,
                 primitives = primitives v
-        } | r <- refine $ real v, i <- refine $ integer v, c <- refine $ character v, b <- refine $ boolean v]
+        } | r <- refine $ real v, i <- refine $ integer v, b <- refine $ boolean v]
 
 instance (AtomicLattice r, AtomicLattice i, AtomicLattice c, AtomicLattice b, RealDomain r, IntDomain i, CharDomain c, BoolDomain b, Address pai, Address vec, Address str, Ord env, Ord exp, Show env)
     => AtomicLattice (ModularSchemeValue r i c b pai vec str var exp env) where
-        atom v = (atom $ real v) && (atom $ integer v) && (atom $ character v) && (atom $ boolean v)
+        atom v = (atom $ real v) && (atom $ integer v) && (atom $ boolean v)
