@@ -29,7 +29,7 @@ library
       Dependency.Dependency
       Dependency.Lattice
       Dependency.State
-      GSystem
+      Labels
       Lib
       Property.Agreement
       Property.Preservation

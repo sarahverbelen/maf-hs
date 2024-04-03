@@ -8,7 +8,7 @@ import Data.List (intercalate)
 import Dependency.State
 import Dependency.Lattice
 import Property.Agreement
-import GSystem
+import Labels
 import Syntax.Scheme.AST
 import Syntax.Scheme
 import Slicer

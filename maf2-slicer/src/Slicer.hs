@@ -11,7 +11,7 @@ import Property.Agreement
 import Property.Preservation
 import Dependency.Lattice
 import Dependency.State
-import GSystem 
+import Labels 
 
 import Syntax.Scheme.AST
 
@@ -21,6 +21,8 @@ slice p c = sliceExp p $ labelSequence p c
 
 type SliceState = State (AbstractSto V) Exp 
 
+
+-- | slices away all redundant expressions based on the given labels. 
 sliceExp :: Exp -> Labels -> Exp 
 sliceExp e l = evalState (sliceExp'' e l) mempty 
 

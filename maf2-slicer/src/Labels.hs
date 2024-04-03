@@ -2,7 +2,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 
-module GSystem(labelSequence, Labels(..), isSkip) where 
+module Labels(labelSequence, Labels(..), isSkip) where 
 
 import Property.Agreement 
 import Property.Preservation
