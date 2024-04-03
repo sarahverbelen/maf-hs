@@ -42,8 +42,9 @@ sliceAssignment e (Binding g) = do  sto <- get
                                     put sto'
                                     if b then return Empty else return e
 
+-- TODO: doesn't seem to work right :(
 sliceLet :: Exp -> [(Ide, Exp)] -> Exp -> Span -> ([(Ide, Exp)] -> Exp -> Span -> Exp) -> Labels -> SliceState
-sliceLet e bds bdy s let' (Lett g lbls lbl) = do    sto <- get
+sliceLet e bds bdy s let' (Lett g lbls lbl) = do    sto <- get 
                                                     let bdy' = (sliceExp bdy lbl)
                                                     let (bds', sto') = runState (sliceBindings bds lbls) sto
                                                     put sto'

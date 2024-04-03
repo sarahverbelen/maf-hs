@@ -15,8 +15,8 @@ noDep ::  Ide -> Exp -> AbstractSto V -> Bool
 -- | holds if there is no dependency of e on x
 noDep x e sto = (atomicExpression e sto) || and (map (noDep x e) $ xCovering [x] (extendStateForExp e sto)) 
 
-dependencies :: Exp -> AbstractSto V -> [Ide] 
+dependencies :: Exp -> AbstractSto V -> [String] 
 -- | returns a list of all variables the expression is dependent on (based on the findNDep algorithm)
-dependencies e sto = if atomicExpression e sto then vars else vars \\ noDeps 
+dependencies e sto = map name $ if atomicExpression e sto then vars else vars \\ noDeps 
     where   vars = (getVarsFromExp' e)
             noDeps = filter (\x -> noDep x e sto) vars

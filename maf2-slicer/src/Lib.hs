@@ -7,6 +7,7 @@ import Prelude hiding (span)
 import Data.List (intercalate)
 import Dependency.State
 import Dependency.Lattice
+import Property.Agreement
 import GSystem
 import Syntax.Scheme.AST
 import Syntax.Scheme
@@ -14,8 +15,8 @@ import Slicer
 
 import Data.Maybe
 
-testX :: [Ide]
-testX = [Ide{name="x", span=NoSpan} ]
+testX :: Agreement
+testX = ["x"]
 
 testProgram :: String
 testProgram = "programs/simple.scm"
