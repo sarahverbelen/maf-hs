@@ -36,7 +36,7 @@ sliceExp' e@(Ltr bds bdy s) l       = sliceLet e bds bdy s Ltr l
 sliceExp' e@(Lrr bds bdy s) l       = sliceLet e bds bdy s Lrr l
 sliceExp' e@(Dfv _ _ _) l           = sliceAssignment e l
 sliceExp' e@(Set _ _ _) l           = sliceAssignment e l  
-sliceExp' (Bgn es s) (Begin l lbls) = return (Bgn (map (uncurry (sliceExp)) (zip es lbls)) s)                                
+sliceExp' (Bgn es s) (Begin lbls)   = return (Bgn (map (uncurry (sliceExp)) (zip es lbls)) s)                                
 
 sliceAssignment :: Exp -> Labels -> SliceState 
 sliceAssignment e (Binding g) = do  sto <- get
@@ -44,13 +44,12 @@ sliceAssignment e (Binding g) = do  sto <- get
                                     put sto'
                                     if b then return Empty else return e
 
--- TODO: doesn't seem to work right :(
 sliceLet :: Exp -> [(Ide, Exp)] -> Exp -> Span -> ([(Ide, Exp)] -> Exp -> Span -> Exp) -> Labels -> SliceState
 sliceLet e bds bdy s let' (Lett g lbls lbl) = do    sto <- get 
                                                     let bdy' = (sliceExp bdy lbl)
                                                     let (bds', sto') = runState (sliceBindings bds lbls) sto
                                                     put sto'
-                                                    if (preserve mempty g e) then return Empty else return $ let' bds' bdy' s 
+                                                    if (preserve sto g e) then return Empty else return $ let' bds' bdy' s 
 
 sliceBindings :: [(Ide, Exp)] -> [Labels] -> State (AbstractSto V) [(Ide, Exp)]
 sliceBindings bds lbls = do bds' <- mapM sliceBinding (zip bds lbls)
