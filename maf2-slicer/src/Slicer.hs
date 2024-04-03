@@ -36,7 +36,9 @@ sliceExp' e@(Ltr bds bdy s) l       = sliceLet e bds bdy s Ltr l
 sliceExp' e@(Lrr bds bdy s) l       = sliceLet e bds bdy s Lrr l
 sliceExp' e@(Dfv _ _ _) l           = sliceAssignment e l
 sliceExp' e@(Set _ _ _) l           = sliceAssignment e l  
-sliceExp' (Bgn es s) (Begin lbls)   = return (Bgn (map (uncurry (sliceExp)) (zip es lbls)) s)                                
+sliceExp' (Bgn es s) (Begin lbls)   = do es' <- mapM (uncurry sliceExp'') (zip es lbls)
+                                         return (Bgn es' s)    
+sliceExp' e@(Iff _ _ _ _) l         = sliceIf e l                            
 
 sliceAssignment :: Exp -> Labels -> SliceState 
 sliceAssignment e (Binding g) = do  sto <- get
@@ -46,9 +48,9 @@ sliceAssignment e (Binding g) = do  sto <- get
 
 sliceLet :: Exp -> [(Ide, Exp)] -> Exp -> Span -> ([(Ide, Exp)] -> Exp -> Span -> Exp) -> Labels -> SliceState
 sliceLet e bds bdy s let' (Lett g lbls lbl) = do    sto <- get 
-                                                    let bdy' = (sliceExp bdy lbl)
                                                     let (bds', sto') = runState (sliceBindings bds lbls) sto
                                                     put sto'
+                                                    bdy' <- sliceExp'' bdy lbl
                                                     if (preserve sto g e) then return Empty else return $ let' bds' bdy' s 
 
 sliceBindings :: [(Ide, Exp)] -> [Labels] -> State (AbstractSto V) [(Ide, Exp)]
@@ -60,3 +62,9 @@ sliceBinding ((var, exp), (Binding g)) = do    s <- get
                                                let (b, s') = preserveWithSto s g (Set var exp NoSpan) 
                                                put s'
                                                if b then return [] else return [(var, exp)]      
+
+sliceIf :: Exp -> Labels -> SliceState 
+sliceIf e@(Iff b c a s) (If g lblC lblA) = do   sto <- get
+                                                c' <- sliceExp'' c lblC; put sto 
+                                                a' <- sliceExp'' a lblA; put sto
+                                                if (preserve sto g e) then return Empty else return (Iff b c' a' s)

@@ -25,7 +25,7 @@ testX :: Agreement
 testX = ["x"]
 
 testProgram :: String
-testProgram = "programs/simple.scm"
+testProgram = "programs/test.scm"
 
 printStores :: [AbstractSto V] -> IO ()
 printStores s = putStrLn $ intercalate "\n" (map show s)
@@ -39,7 +39,7 @@ testLabeling = do
     -- putStrLn $ show $ abstractStoToEnv (extendStateForExp e mempty)
     -- putStrLn $ show $ Map.union (extendStateForExp e mempty) (initialSto @V (abstractStoToEnv (extendStateForExp e mempty)))
     -- putStrLn $ show $ generateStates e mempty
-    putStrLn $ show $ abstractEval e mempty 
+    -- putStrLn $ show $ abstractEval e mempty 
     -- putStrLn $ show $ preserveWithSto mempty testX e
-    putStrLn $ show $ labelSequence e testX
+    -- putStrLn $ show $ labelSequence e testX
     putStrLn $ show $ slice e testX

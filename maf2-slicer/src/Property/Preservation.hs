@@ -52,7 +52,7 @@ preserveLet binds bdy g = do  bs <- sequence $ map (preserveBinding g) binds
 preserveBinding :: Agreement -> (Ide, Exp) -> PreserveState             
 preserveBinding g (var, e) = do --b <- preserve' e g -- TODO: reinclude when function applications are dealt with (body of function could modify the state)
                                 let b = True
-                                let mkIde i = Ide (name i) NoSpan
+                                let mkIde i = Ide (name i) NoSpan -- assume variables are unique by name.. (because different Ide =/= different variable..)
                                 s <- get
                                 let v = abstractEvalForCovering e s
                                 -- update the value in our abstract state
@@ -60,7 +60,7 @@ preserveBinding g (var, e) = do --b <- preserve' e g -- TODO: reinclude when fun
                                 put s'
                                 -- if this variable is in the agreement, we need to check if the property is preserved by the assignment     
                                 -- if the variable wasn't defined yet and it is in the agreement, the property is not preserved (ensures we don't remove the first definition of necessary variables!)
-                                let b' = (not ((name var) `elem` g)) || ((Map.lookup (mkIde var) s) /= Nothing) --((v /= top) && ((Map.lookup var s) /= Nothing)  && (v `elem` Map.lookup var s))
+                                let b' = (not ((name var) `elem` g)) || ((v /= top) && ((Map.lookup (mkIde var) s) /= Nothing) && (v `elem` Map.lookup (mkIde var) s))
                                 return $ b && b'
 
 -- |PP-IF (assumes no side effects in condition)
