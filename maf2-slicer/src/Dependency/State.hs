@@ -2,15 +2,32 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Dependency.State(AbstractSto, covering, xCovering, abstractEval, abstractEvalForCovering, getVarsFromExp', generateStates, extendState, extendStateForExp) where 
+module Dependency.State(AbstractSto, covering, xCovering, abstractEval, abstractEval', abstractEvalForCovering, getVarsFromExp', generateStates, extendState, extendStateForExp) where 
 
 import Syntax.Scheme
 import Lattice
 import Dependency.Lattice
-import AbstractEval
 
 import qualified Data.Map as Map hiding (partition)
 import Data.List (groupBy, partition, nubBy)
+import Data.Set (Set)
+
+import Data.TypeLevel.Ghost
+import Analysis.Scheme
+import Control.SVar.ModX
+import Analysis.Scheme.Store
+import Domain.Scheme hiding (Exp)
+import Control.Monad.DomainError
+
+import Data.Functor.Identity
+import qualified Analysis.Scheme.Semantics as Semantics 
+import Analysis.Scheme.Primitives
+
+import Data.Function ((&))
+import Analysis.Monad
+
+
+type AbstractSto v = Map.Map Ide v
 
 covering :: AbstractSto V -> [AbstractSto V]
 -- | a covering of a state s is a set of refinements of that state such that all possible values are accounted for
@@ -21,11 +38,6 @@ xCovering :: [Ide] -> AbstractSto V -> [AbstractSto V]
 xCovering x s = fmap Map.fromList (sequence $ groupBy (\ a b -> fst a == fst b) ([(k, v') | (k, v) <- notInX, v' <- refine v ++ [v]] ++ inX))
                 where (inX, notInX) = partition (\a -> elem (fst a) x) (Map.toList s)
 
-generateStates :: Exp -> AbstractSto V -> [AbstractSto V]
--- | generates a set of states from a state by extending it with the variables in the expression 
---   and computing the x-covering (keeping the variables already in the store unchanged)
-generateStates e s = xCovering (Map.keys s) (extendState (getVarsFromExp' e) s)
-
 extendState :: [Ide] -> AbstractSto V -> AbstractSto V 
 -- | adds a list of variables to an abstract store and sets all their values to top (if they weren't in the store yet)
 extendState vars sto = foldr (\var sto' -> Map.insertWith (flip const) var top sto') sto vars
@@ -33,12 +45,94 @@ extendState vars sto = foldr (\var sto' -> Map.insertWith (flip const) var top s
 extendStateForExp :: Exp -> AbstractSto V -> AbstractSto V 
 extendStateForExp e s = extendState (getVarsFromExp' e) s
 
+generateStates :: Exp -> AbstractSto V -> [AbstractSto V]
+-- | generates a set of states from a state by extending it with the variables in the expression 
+--   and computing the x-covering (keeping the variables already in the store unchanged)
+generateStates e s = xCovering (Map.keys s) (extendState (getVarsFromExp' e) s)
+
 abstractEvalForCovering :: Exp -> AbstractSto V -> V
 -- | extend the abstract store with all other variables in Exp, set all of their values to Top 
 --   compute the X-covering (X = all variables in the store before we extended it) of this abstract store
 --   run the abstract interpreter for the expression using these stores as initial states
 --   join the resulting values together to get the final value
 abstractEvalForCovering e sto = foldr join bottom (map (abstractEval e) (generateStates e sto))
+
+abstractStoToEnv :: AbstractSto V -> Map.Map String Ide -- temporary: need to keep track of environment as well as store
+abstractStoToEnv s = Map.union (Map.fromList $ map (\(ide, v) -> (name ide, ide)) (Map.toList s)) (initialEnv prmAdr)
+
+abstractEval' :: Exp -> AbstractSto V -> (V, AbstractSto V)
+-- version of abstractEval that also returns the updated store
+abstractEval' e s = (v, values sto') where (v, sto') = analyze'' (e, env, (), Ghost) $ sto
+                                           s' = extendStateForExp e s
+                                           env = abstractStoToEnv s'
+                                           sto = fromValues $ Map.union s (initialSto env)
+
+abstractEval :: Exp -> AbstractSto V -> V
+-- | finds the abstract value of the expression in the given abstract state
+abstractEval e s = fst $ abstractEval' e s
+              
+              
+
+instance (Dependency () ()) where 
+       dep = undefined
+
+instance (Dependency Ide ()) where
+       dep = undefined
+
+instance VarAdr Ide V () () where
+       retAdr = undefined
+       prmAdr s = Ide s NoSpan 
+
+instance SchemeAlloc () Ide V () where
+       allocVar x _ = x 
+       allocCtx = undefined
+       allocPai = undefined
+       allocVec = undefined
+       allocStr = undefined   
+
+getValue :: MayEscape (Set DomainError) V -> V 
+getValue (Value v) = v
+getValue _ = bottom
+
+analyze' :: (Exp, Map.Map String Ide, (), GT ()) -> DSto () V -> V
+analyze' (exp, env, ctx, _) store =  
+       let ((res, _), _) = Semantics.eval exp
+              & runEvalT
+              & runMayEscape @_ @(Set DomainError)
+              & runCallT @V @()
+              & runStoreT @VrAdr (values  store)
+              & runStoreT @StAdr (strings store)
+              & runStoreT @PaAdr (pairs   store)
+              & runStoreT @VeAdr (vecs    store)
+              & combineStores @_ @_ @_ @V
+              & runEnv env
+              & runAlloc @PaAdr @Exp (const $ const ())
+              & runAlloc @VeAdr @Exp (const $ const ())
+              & runAlloc @StAdr @Exp (const $ const ())
+              & runAlloc @VrAdr @Ide @() @Ide (\from ctx -> from)
+              & runCtx @() ctx
+              & runIdentity      
+       in getValue res
+
+analyze'' :: (Exp, Map.Map String Ide, (), GT ()) -> DSto () V -> (V, DSto () V)
+analyze'' (exp, env, ctx, _) store =  
+       let ((res, _), sto) = Semantics.eval exp
+              & runEvalT
+              & runMayEscape @_ @(Set DomainError)
+              & runCallT @V @()
+              & runStoreT @VrAdr (values  store)
+              & runStoreT @StAdr (strings store)
+              & runStoreT @PaAdr (pairs   store)
+              & runStoreT @VeAdr (vecs    store)
+              & combineStores @_ @_ @_ @V
+              & runEnv env
+              & runAlloc @PaAdr @Exp (const $ const ())
+              & runAlloc @VeAdr @Exp (const $ const ())
+              & runAlloc @StAdr @Exp (const $ const ())
+              & runAlloc @VrAdr @Ide @() @Ide (\from ctx -> from)
+              & runCtx @() ctx
+              & runIdentity      
+       in (getValue res, sto)       
 
 getVarsFromExp' :: Exp -> [Ide]
 getVarsFromExp' = (nubBy (\a b -> name a == name b)) . getVarsFromExp

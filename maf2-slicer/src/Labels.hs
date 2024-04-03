@@ -40,9 +40,10 @@ shiftLabels' (If g lblC lblA)           = do    g' <- get
                                                 lblA' <- shiftLabels' lblA; put g' 
                                                 lblC' <- shiftLabels' lblC; put g 
                                                 return $ If g' lblC' lblA'
-shiftLabels' (Lett g lblBds lblBdy)     = do    lblBdy' <- shiftLabels' lblBdy 
+shiftLabels' (Lett g lblBds lblBdy)     = do    g' <- get
+                                                lblBdy' <- shiftLabels' lblBdy 
                                                 lblBds' <- mapM shiftLabels' (reverse lblBds)
-                                                g' <- get; put g
+                                                put g
                                                 return $ Lett g' (reverse lblBds') lblBdy'
                                         
 
@@ -93,9 +94,9 @@ labelBinding (var, e) = do  (sto, g) <- get
                             -- then the new agreement contains all variables that this expression is dependent on + all of the previous ones except the current one being assigned
                             let g' = if (name var) `elem` g then union (delete (name var) g) $ dependencies e sto else g
                             -- else the agreement stays the same
-                            let v = abstractEval e sto
+                            let (v, sto') = abstractEval' e sto
                             -- update the state
-                            let sto' = Map.insert var v sto
+                            --let sto' = Map.insert var v sto
                             put (sto', g')
                             return (Binding g')
 

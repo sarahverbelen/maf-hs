@@ -37,7 +37,7 @@ preserve' (Bgn (e:es) x) g      = do    b <- preserve' e g
 -- |PP-IF
 preserve' (Iff b c a _) g       = preserveIf b c a g
 -- | PP-APP *
-preserve' (App _ _ _) _         = return False
+preserve' (App _ _ _) _         = return False -- TODO (could modify state..)
 -- | PP-SKIP (all other expressions don't modify the state and as such are equivalent to skip)
 preserve' _ _                   = return True
 
@@ -50,14 +50,17 @@ preserveLet binds bdy g = do  bs <- sequence $ map (preserveBinding g) binds
 
 -- | PP-ASSIGN              
 preserveBinding :: Agreement -> (Ide, Exp) -> PreserveState             
-preserveBinding g (var, e) = do b <- preserve' e g
+preserveBinding g (var, e) = do --b <- preserve' e g -- TODO: reinclude when function applications are dealt with (body of function could modify the state)
+                                let b = True
+                                let mkIde i = Ide (name i) NoSpan
                                 s <- get
                                 let v = abstractEvalForCovering e s
                                 -- update the value in our abstract state
-                                let s' = Map.insert var v s
+                                let s' = Map.insert (mkIde var) v s
                                 put s'
                                 -- if this variable is in the agreement, we need to check if the property is preserved by the assignment     
-                                let b' = (not ((name var) `elem` g)) || ((v /= top) && ((Map.lookup var s) /= Nothing) && (v `elem` Map.lookup var s))
+                                -- if the variable wasn't defined yet and it is in the agreement, the property is not preserved (ensures we don't remove the first definition of necessary variables!)
+                                let b' = (not ((name var) `elem` g)) || ((Map.lookup (mkIde var) s) /= Nothing) --((v /= top) && ((Map.lookup var s) /= Nothing)  && (v `elem` Map.lookup var s))
                                 return $ b && b'
 
 -- |PP-IF (assumes no side effects in condition)
