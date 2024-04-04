@@ -5,13 +5,18 @@ module Property.Preservation(preserve, preserveWithSto) where
 import Property.Agreement
 import Dependency.State
 import Dependency.Lattice
+
 import Lattice
 import Syntax.Scheme.AST
-
-import qualified Data.Map as Map
 import Control.Monad.State
 
+import qualified Data.Map as Map
+
 type PreserveState = State (AbstractSto V) Bool
+
+---------------------------------------------------------------------------------------------------
+--- PP-SYSTEM RULES
+---------------------------------------------------------------------------------------------------
 
 -- | PP(g, e)
 preserve :: AbstractSto V -> Agreement -> Exp -> Bool
@@ -37,7 +42,9 @@ preserve' (Bgn (e:es) x) g      = do    b <- preserve' e g
 -- |PP-IF
 preserve' (Iff b c a _) g       = preserveIf b c a g
 -- | PP-APP *
-preserve' (App _ _ _) _         = return False -- TODO (could modify state..)
+preserve' (App _ _ _) _         = return False -- TODO
+-- | PP-FUNCTIONDEF *
+preserve' (Dff _ _ _ _) _       = return False -- TODO
 -- | PP-SKIP (all other expressions don't modify the state and as such are equivalent to skip)
 preserve' _ _                   = return True
 

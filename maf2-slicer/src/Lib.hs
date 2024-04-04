@@ -25,7 +25,7 @@ testX :: Agreement
 testX = ["x"]
 
 testProgram :: String
-testProgram = "programs/test.scm"
+testProgram = "programs/simple.scm"
 
 printStores :: [AbstractSto V] -> IO ()
 printStores s = putStrLn $ intercalate "\n" (map show s)

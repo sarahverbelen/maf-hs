@@ -9,9 +9,10 @@ import Property.Preservation
 import Dependency.State
 import Dependency.Lattice
 import Dependency.Dependency
-import Syntax.Scheme.AST
 
+import Syntax.Scheme.AST
 import Control.Monad.State
+
 import Data.List (union, delete)
 import qualified Data.Map as Map
 
@@ -46,6 +47,9 @@ shiftLabels' (Lett g lblBds lblBdy)     = do    g' <- get
                                                 put g
                                                 return $ Lett g' (reverse lblBds') lblBdy'
                                         
+---------------------------------------------------------------------------------------------------
+--- G-SYSTEM RULES
+---------------------------------------------------------------------------------------------------
 
 labelSequence :: Exp -> Agreement -> Labels
 -- | label all statements in the sequence with agreements by backwards propagating the G-system rules

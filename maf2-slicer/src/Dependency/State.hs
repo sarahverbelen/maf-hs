@@ -2,29 +2,27 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Dependency.State(AbstractSto, covering, xCovering, abstractEval, abstractEval', abstractEvalForCovering, getVarsFromExp', generateStates, extendState, extendStateForExp) where 
+module Dependency.State where 
 
 import Syntax.Scheme
 import Lattice
 import Dependency.Lattice
 
+import Data.TypeLevel.Ghost
+import Analysis.Scheme
+import qualified Analysis.Scheme.Semantics as Semantics 
+import Analysis.Scheme.Primitives
+import Analysis.Monad
+import Analysis.Scheme.Store
+import Control.SVar.ModX
+import Control.Monad.DomainError
+import Domain.Scheme hiding (Exp)
+
 import qualified Data.Map as Map hiding (partition)
 import Data.List (groupBy, partition, nubBy)
 import Data.Set (Set)
-
-import Data.TypeLevel.Ghost
-import Analysis.Scheme
-import Control.SVar.ModX
-import Analysis.Scheme.Store
-import Domain.Scheme hiding (Exp)
-import Control.Monad.DomainError
-
 import Data.Functor.Identity
-import qualified Analysis.Scheme.Semantics as Semantics 
-import Analysis.Scheme.Primitives
-
 import Data.Function ((&))
-import Analysis.Monad
 
 
 type AbstractSto v = Map.Map Ide v
@@ -50,6 +48,10 @@ generateStates :: Exp -> AbstractSto V -> [AbstractSto V]
 --   and computing the x-covering (keeping the variables already in the store unchanged)
 generateStates e s = xCovering (Map.keys s) (extendState (getVarsFromExp' e) s)
 
+---------------------------------------------------------------------------------------------------
+--- ABSTRACT EVALUATION
+---------------------------------------------------------------------------------------------------
+
 abstractEvalForCovering :: Exp -> AbstractSto V -> V
 -- | extend the abstract store with all other variables in Exp, set all of their values to Top 
 --   compute the X-covering (X = all variables in the store before we extended it) of this abstract store
@@ -61,7 +63,7 @@ abstractStoToEnv :: AbstractSto V -> Map.Map String Ide -- temporary: need to ke
 abstractStoToEnv s = Map.union (Map.fromList $ map (\(ide, v) -> (name ide, ide)) (Map.toList s)) (initialEnv prmAdr)
 
 abstractEval' :: Exp -> AbstractSto V -> (V, AbstractSto V)
--- version of abstractEval that also returns the updated store
+-- | version of abstractEval that also returns the updated store
 abstractEval' e s = (v, values sto') where (v, sto') = analyze'' (e, env, (), Ghost) $ sto
                                            s' = extendStateForExp e s
                                            env = abstractStoToEnv s'
@@ -70,9 +72,7 @@ abstractEval' e s = (v, values sto') where (v, sto') = analyze'' (e, env, (), Gh
 abstractEval :: Exp -> AbstractSto V -> V
 -- | finds the abstract value of the expression in the given abstract state
 abstractEval e s = fst $ abstractEval' e s
-              
-              
-
+                            
 instance (Dependency () ()) where 
        dep = undefined
 
@@ -134,7 +134,11 @@ analyze'' (exp, env, ctx, _) store =
               & runIdentity      
        in (getValue res, sto)       
 
+
+-- auxiliary function that extracts the variables used in an expression
+
 getVarsFromExp' :: Exp -> [Ide]
+-- version where the variables are unique by name
 getVarsFromExp' = (nubBy (\a b -> name a == name b)) . getVarsFromExp
 
 getVarsFromExp :: Exp -> [Ide]
