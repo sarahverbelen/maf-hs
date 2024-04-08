@@ -81,6 +81,10 @@ labelExp (Ltr bds bdy _) = labelLet bds bdy
 labelExp (Lrr bds bdy _) = labelLet bds bdy
 -- | G-APP *
 --labelExp e@(App prc ops s) =
+-- | G-FUNCTIONDEF * 
+--labelExp e@(Dff var ags bdy s) = 
+-- | G-LAMBDA * 
+--labelExp e@(Lam ags bdy s) = 
 -- | G-SKIP
 labelExp _ = labelSkip
 

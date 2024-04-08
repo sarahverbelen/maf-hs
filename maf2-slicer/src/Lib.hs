@@ -41,5 +41,5 @@ testLabeling = do
     -- putStrLn $ show $ generateStates e mempty
     -- putStrLn $ show $ abstractEval e mempty 
     -- putStrLn $ show $ preserveWithSto mempty testX e
-    -- putStrLn $ show $ labelSequence e testX
+    putStrLn $ show $ labelSequence e testX
     putStrLn $ show $ slice e testX
