@@ -7,6 +7,7 @@ module Dependency.State where
 import Syntax.Scheme
 import Lattice
 import Dependency.Lattice
+import Property.Agreement
 
 import Data.TypeLevel.Ghost
 import Analysis.Scheme
@@ -29,12 +30,23 @@ type AbstractSto v = Map.Map Ide v
 
 covering :: AbstractSto V -> [AbstractSto V]
 -- | a covering of a state s is a set of refinements of that state such that all possible values are accounted for
-covering s = fmap Map.fromList (sequence $ groupBy (\ a b -> fst a == fst b) [(k, v') | (k, v) <- Map.toList s, v' <- refine v ++ [v]])
+covering s = fmap Map.fromList (sequence $ groupBy (\ a b -> fst a == fst b) [(k, v') | (k, v) <- Map.toList s, v' <- refine v])
 
 xCovering :: [Ide] -> AbstractSto V -> [AbstractSto V]
 -- | values of variables outside some set X take values that are the same as either the corresponding values in s or their direct subvalues
-xCovering x s = fmap Map.fromList (sequence $ groupBy (\ a b -> fst a == fst b) ([(k, v') | (k, v) <- notInX, v' <- refine v ++ [v]] ++ inX))
+xCovering x s = fmap Map.fromList (sequence $ groupBy (\ a b -> fst a == fst b) ([(k, v') | (k, v) <- notInX, v' <- refine v] ++ inX))
                 where (inX, notInX) = partition (\a -> elem (fst a) x) (Map.toList s)
+
+refineByProp :: Property -> V -> [V]
+refineByProp PAll v  = refine v 
+refineByProp PReal v = [v { real = r }    | r <- refine $ real v]
+refineByProp PInt v  = [v { integer = i } | i <- refine $ integer v]
+refineByProp PBool v = [v { boolean = b } | b <- refine $ boolean v]
+
+xCoveringByProp :: Ide -> Property -> AbstractSto V -> [AbstractSto V]
+xCoveringByProp x PAll s = xCovering [x] s  
+xCoveringByProp x p s = fmap Map.fromList (sequence $ groupBy (\ a b -> fst a == fst b) ([(k, v') | (k, v) <- notInX, v' <- refineByProp p v] ++ inX))
+                where (inX, notInX) = partition (\a -> name (fst a) == name x) (Map.toList s) 
 
 extendState :: [Ide] -> AbstractSto V -> AbstractSto V 
 -- | adds a list of variables to an abstract store and sets all their values to top (if they weren't in the store yet)

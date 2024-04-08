@@ -34,12 +34,12 @@ class (TopLattice v) => RefinableLattice v where
     refine :: v -> [v] 
 
 instance (Ord a, Show a, Enum a, Bounded a) => RefinableLattice (CP a) where 
-    refine Bottom = [] -- [Bottom]
+    refine Bottom = []
     refine (Constant _) = [Bottom]
     refine Top = [Constant i | i <- [minBound..]]
 
 instance RefinableLattice Sign where 
-    refine SBottom = [] -- [SBottom]
+    refine SBottom = []
     refine STop = [ZeroOrNeg, ZeroOrPos]    
     refine ZeroOrNeg = [Zero, Neg]
     refine ZeroOrPos = [Zero, Pos]
@@ -47,7 +47,7 @@ instance RefinableLattice Sign where
 
 instance (RefinableLattice a) => RefinableLattice (Maybe a) where 
     refine (Just x) = [Just a | a <- refine x]
-    refine Nothing = [Nothing]  
+    refine Nothing = []  
 
 instance (RefinableLattice a) => RefinableLattice (CPChar' a) where 
     refine (CPChar' x) = [CPChar' a | a <- refine x]

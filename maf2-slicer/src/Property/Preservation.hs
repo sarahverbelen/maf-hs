@@ -67,7 +67,7 @@ preserveBinding g (var, e) = do let mkIde i = Ide (name i) NoSpan -- assume vari
                                 put s'
                                 -- if this variable is in the agreement, we need to check if the property is preserved by the assignment     
                                 -- if the variable wasn't defined yet and it is in the agreement, the property is not preserved (ensures we don't remove the first definition of necessary variables!)
-                                let b = (not ((name var) `elem` g)) || ((v /= top) && ((Map.lookup (mkIde var) s) /= Nothing) && (v `elem` Map.lookup (mkIde var) s))
+                                let b = (not ((name var) `elem` (map fst g))) || ((v /= top) && ((Map.lookup (mkIde var) s) /= Nothing) && (v `elem` Map.lookup (mkIde var) s))
                                 return b
 
 -- |PP-IF (assumes no side effects in condition)

@@ -100,7 +100,7 @@ labelBinding :: (Ide, Exp) -> LabelState
 labelBinding (var, e) = do  (sto, g) <- get 
                             -- if the assigned variable is in the agreement
                             -- then the new agreement contains all variables that this expression is dependent on + all of the previous ones except the current one being assigned
-                            let g' = if (name var) `elem` g then union (delete (name var) g) $ dependencies e sto else g
+                            let g' = if (name var) `elem` (map fst g) then union (deleteFromAL (name var) g) $ dependencies e (lookup (name var) g) sto else g
                             -- else the agreement stays the same
                             let (v, sto') = abstractEval' e sto
                             -- update the state
@@ -116,7 +116,7 @@ labelIf b c a   = do (sto, g) <- get -- improve: update state
                      put (sto, g) -- improve: update state
                      lblA <- labelExp' a
                      (_, ga) <- get
-                     let gb = map name $ getVarsFromExp' b -- condition agreement (if agree on gb, same branch taken) (could be more precise)
+                     let gb = map (\x -> (name x, PAll)) $ getVarsFromExp' b -- condition agreement (if agree on gb, same branch taken) (could be more precise)
                      let gIf = union ga $ union gc gb
                      put (sto, gIf)
                      return (If gIf lblC lblA)
@@ -124,3 +124,10 @@ labelIf b c a   = do (sto, g) <- get -- improve: update state
 -- | G-SKIP
 labelSkip :: LabelState
 labelSkip = do (_, g) <- get; return (Skip g)
+
+
+deleteFromAL :: (Eq key) => key -> [(key, b)] -> [(key, b)]
+deleteFromAL _ [] = []
+deleteFromAL b ((a, x):r)
+    | a == b = deleteFromAL b r 
+    | otherwise = (a, x) : deleteFromAL b r
