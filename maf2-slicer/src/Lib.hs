@@ -6,6 +6,7 @@ import Prelude hiding (span)
 
 import Data.List (intercalate)
 import Dependency.State
+import Dependency.Dependency
 import Dependency.Lattice
 import Property.Preservation
 import Property.Agreement
@@ -22,10 +23,10 @@ import Data.Maybe
 import qualified Data.Map as Map
 
 testX :: Agreement
-testX = ["x"]
+testX = ["z"]
 
 testProgram :: String
-testProgram = "programs/simple.scm"
+testProgram = "programs/test.scm"
 
 printStores :: [AbstractSto V] -> IO ()
 printStores s = putStrLn $ intercalate "\n" (map show s)
@@ -41,5 +42,6 @@ testLabeling = do
     -- putStrLn $ show $ generateStates e mempty
     -- putStrLn $ show $ abstractEval e mempty 
     -- putStrLn $ show $ preserveWithSto mempty testX e
+    -- putStrLn $ show $ dependencies e mempty
     putStrLn $ show $ labelSequence e testX
     putStrLn $ show $ slice e testX

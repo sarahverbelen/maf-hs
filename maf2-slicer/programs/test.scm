@@ -1,5 +1,4 @@
-(let* ((a 1)
-       (b 2)
-       (c 3)
-       (x (- (+ a b) a)))
-    x)
+(define x 8)
+(define y 7)
+(define z (- (+ x y) x))
+z

@@ -37,7 +37,9 @@ sliceExp' e@(Lrr bds bdy s) l       = sliceLet e bds bdy s Lrr l
 sliceExp' e@(Dfv _ _ _) l           = sliceAssignment e l
 sliceExp' e@(Set _ _ _) l           = sliceAssignment e l  
 sliceExp' (Bgn es s) (Begin lbls)   = do es' <- mapM (uncurry sliceExp'') (zip es lbls)
-                                         return (Bgn es' s)    
+                                         if null es' 
+                                            then return Empty
+                                            else return (Bgn es' s)    
 sliceExp' e@(Iff _ _ _ _) l         = sliceIf e l                            
 
 sliceAssignment :: Exp -> Labels -> SliceState 
