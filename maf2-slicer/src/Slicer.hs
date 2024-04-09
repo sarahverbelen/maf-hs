@@ -40,11 +40,11 @@ sliceExp' (Set var e s) toslice   = sliceAssignment var e s Set toslice
 sliceExp' (Bgn es s) toslice      = sliceBegin es s toslice
 sliceExp' (Iff b c a s) toslice   = sliceIf b c a s toslice 
 sliceExp' e (Lbl False)           = return e 
-sliceExp' _ _                     = return Empty
+sliceExp' e _                     = return (Nll (spanOf e))
 
 
 sliceLet :: [(Ide, Exp)] -> Exp -> Span -> ([(Ide, Exp)] -> Exp -> Span -> Exp) -> ToSlice -> SliceState  
-sliceLet bds bdy s let' (Lbl True) = return Empty 
+sliceLet bds bdy s let' (Lbl True) = return (Nll s) 
 sliceLet bds bdy s let' (Lbls ((Lbl False):lblBds:lblBdy)) = do 
    vars <- get
    let (bds', vars') = runState (sliceBinds bds lblBds) vars
@@ -75,17 +75,17 @@ sliceAssignment var e s def' (Lbl True)  = do
    vars <- get
    if (name var) `elem` vars 
       then do put (vars \\ [name var]); return $ def' var (dummyExp (spanOf e)) s
-      else do put (vars \\ [name var]); return Empty
+      else do put (vars \\ [name var]); return (Nll s) 
 
 sliceBegin :: [Exp] -> Span -> ToSlice -> SliceState  
-sliceBegin es s (Lbl True) = return Empty 
+sliceBegin es s (Lbl True) = return (Nll s) 
 sliceBegin es s (Lbls ((Lbl False):lbls)) = do
    vars <- get
    es' <- mapM (\(e, l) -> sliceExp' e l) (zip es lbls)
    return $ Bgn es' s
 
 sliceIf :: Exp -> Exp -> Exp -> Span -> ToSlice -> SliceState
-sliceIf b c a s (Lbl True) = return Empty 
+sliceIf b c a s (Lbl True) = return (Nll s) 
 sliceIf b c a s (Lbls ((Lbl False):lblC:lblA)) = do 
    c' <- sliceExp' c lblC 
    a' <- sliceExp' a (head lblA)
