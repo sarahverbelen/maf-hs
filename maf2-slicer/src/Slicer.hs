@@ -6,7 +6,7 @@ module Slicer where
 
 import Control.Monad.State    
 import Prelude hiding (exp)
-import Data.List (union)
+import Data.List (union, (\\))
 
 import Property.Agreement 
 import Property.Preservation
@@ -22,46 +22,67 @@ slice p c = sliceExp p $ labelSequence p c
 
 type UsedVars = [String]
 
+type SliceState = State UsedVars Exp 
+
 sliceExp :: Exp -> Labels -> Exp 
-sliceExp e l = sliceExp' e toslice vars where (toslice, vars) = labelIrrelevant e l
+sliceExp e l = evalState (sliceExp' e toslice) vars where (toslice, vars) = labelIrrelevant e l
 
-sliceExp' :: Exp -> ToSlice -> UsedVars -> Exp 
-sliceExp' (Let bds bdy s) toslice vars = sliceLet bds bdy s Let toslice vars 
-sliceExp' (Ltt bds bdy s) toslice vars = sliceLet bds bdy s Ltt toslice vars 
-sliceExp' (Ltr bds bdy s) toslice vars = sliceLet bds bdy s Ltr toslice vars 
-sliceExp' (Lrr bds bdy s) toslice vars = sliceLet bds bdy s Lrr toslice vars 
-sliceExp' (Dfv var e s) toslice vars   = sliceAssignment var e s Dfv toslice vars
-sliceExp' (Set var e s) toslice vars   = sliceAssignment var e s Set toslice vars
-sliceExp' (Bgn es s) toslice vars      = sliceBegin es s toslice vars
-sliceExp' (Iff b c a s) toslice vars   = sliceIf b c a s toslice vars 
-sliceExp' e (Lbl False) _              = e 
-sliceExp' _ _ _                        = Empty
+sliceExp' :: Exp -> ToSlice -> SliceState 
+sliceExp' (Let bds bdy s) toslice = sliceLet bds bdy s Let toslice 
+sliceExp' (Ltt bds bdy s) toslice = sliceLet bds bdy s Ltt toslice 
+sliceExp' (Ltr bds bdy s) toslice = sliceLet bds bdy s Ltr toslice 
+sliceExp' (Lrr bds bdy s) toslice = sliceLet bds bdy s Lrr toslice 
+sliceExp' (Dfv var e s) toslice   = sliceAssignment var e s Dfv toslice
+sliceExp' (Set var e s) toslice   = sliceAssignment var e s Set toslice
+sliceExp' (Bgn es s) toslice      = sliceBegin es s toslice
+sliceExp' (Iff b c a s) toslice   = sliceIf b c a s toslice 
+sliceExp' e (Lbl False)           = return e 
+sliceExp' _ _                     = return Empty
 
 
-sliceLet :: [(Ide, Exp)] -> Exp -> Span -> ([(Ide, Exp)] -> Exp -> Span -> Exp) -> ToSlice -> UsedVars -> Exp 
-sliceLet bds bdy s let' (Lbl True) vars = Empty 
-sliceLet bds bdy s let' (Lbls ((Lbl False):lblBds:lblBdy)) vars = let' bds' bdy' s where bds' = sliceBinds bds lblBds vars
-                                                                                         bdy' = sliceExp' bdy (head lblBdy) vars
+sliceLet :: [(Ide, Exp)] -> Exp -> Span -> ([(Ide, Exp)] -> Exp -> Span -> Exp) -> ToSlice -> SliceState  
+sliceLet bds bdy s let' (Lbl True) = return Empty 
+sliceLet bds bdy s let' (Lbls ((Lbl False):lblBds:lblBdy)) = do 
+   vars <- get
+   let (bds', vars') = runState (sliceBinds bds lblBds) vars
+   bdy' <- sliceExp' bdy (head lblBdy)
+   return $ let' bds' bdy' s                                                                                        
 
-sliceBinds :: [(Ide, Exp)] -> ToSlice -> UsedVars -> [(Ide, Exp)] 
-sliceBinds bds (Lbls toslice) vars = map fst $ filter (\(bd, lbl) -> sliceBind bd lbl vars) (zip bds toslice)
+sliceBinds :: [(Ide, Exp)] -> ToSlice -> State UsedVars [(Ide, Exp)] 
+sliceBinds [] _ = return []
+sliceBinds (bd:bds) (Lbls (l:toslice)) = do 
+   vars <- get
+   let b = sliceBind bd l vars 
+   let (var, _) = bd
+   if b 
+      then do nextBds <- sliceBinds bds (Lbls toslice); return $ nextBds
+      else do put (vars \\ [name var]); nextBds <- sliceBinds bds (Lbls toslice); return $ [bd] ++ nextBds
 
 sliceBind :: (Ide, Exp) -> ToSlice -> UsedVars -> Bool 
-sliceBind bd (Lbl False) vars = True 
-sliceBind (var, e) (Lbl True) vars = if (name var) `elem` vars then True else False
+sliceBind bd (Lbl False) vars = False 
+sliceBind (var, e) (Lbl True) vars = if (name var) `elem` vars then False else True
 
-sliceAssignment :: Ide -> Exp -> Span -> (Ide -> Exp -> Span -> Exp) -> ToSlice -> UsedVars -> Exp 
-sliceAssignment var e s def' (Lbl False) vars = def' var e s
-sliceAssignment var e s def' (Lbl True) vars  = if (name var) `elem` vars then (def' var e s) else Empty
+sliceAssignment :: Ide -> Exp -> Span -> (Ide -> Exp -> Span -> Exp) -> ToSlice -> SliceState 
+sliceAssignment var e s def' (Lbl False) = return $ def' var e s
+sliceAssignment var e s def' (Lbl True)  = do 
+   vars <- get
+   if (name var) `elem` vars 
+      then do put (vars \\ [name var]); return $ def' var e s
+      else return Empty
 
-sliceBegin :: [Exp] -> Span -> ToSlice -> UsedVars -> Exp 
-sliceBegin es s (Lbl True) vars = Empty 
-sliceBegin es s (Lbls ((Lbl False):lbls)) vars = let es' = map (\(e, l) -> sliceExp' e l vars) (zip es lbls) in (Bgn es' s)
+sliceBegin :: [Exp] -> Span -> ToSlice -> SliceState  
+sliceBegin es s (Lbl True) = return Empty 
+sliceBegin es s (Lbls ((Lbl False):lbls)) = do
+   vars <- get
+   es' <- mapM (\(e, l) -> sliceExp' e l) (zip es lbls)
+   return $ Bgn es' s
 
-sliceIf :: Exp -> Exp -> Exp -> Span -> ToSlice -> UsedVars -> Exp 
-sliceIf b c a s (Lbl True) vars = Empty 
-sliceIf b c a s (Lbls ((Lbl False):lblC:lblA)) vars = Iff b c' a' s where c' = sliceExp' c lblC vars
-                                                                          a' = sliceExp' a (head lblA) vars 
+sliceIf :: Exp -> Exp -> Exp -> Span -> ToSlice -> SliceState
+sliceIf b c a s (Lbl True) = return Empty 
+sliceIf b c a s (Lbls ((Lbl False):lblC:lblA)) = do 
+   c' <- sliceExp' c lblC 
+   a' <- sliceExp' a (head lblA)
+   return $ Iff b c' a' s
 
 data ToSlice = Lbls [ToSlice] | Lbl Bool deriving (Show, Eq)
 type LabelIrrState = State (AbstractSto V, UsedVars) ToSlice
