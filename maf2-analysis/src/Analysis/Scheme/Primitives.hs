@@ -18,6 +18,7 @@ import Control.Monad.Join
 import Control.Monad ((>=>))
 import Syntax.Scheme.AST
 import Control.Monad.DomainError
+import Lattice (bottom)
 
 data Prim v = Prim { primName :: String, run :: forall m . PrimM m v => Exp -> [v] -> m v }
 
@@ -120,7 +121,8 @@ allPrimitives = [
    fix2 "<" lt,
    fix2 "=" eq,
    fix1 "random" Domain.random,
-   fix0 "bool-top" $ return Domain.boolTop
+   fix0 "bool-top" $ return Domain.boolTop,
+   fix0 "dummy" $ return bottom
    -- fix1 "error" todo
    ]
 

@@ -24,6 +24,9 @@ type UsedVars = [String]
 
 type SliceState = State UsedVars Exp 
 
+dummyExp :: Span -> Exp 
+dummyExp s = Var (Ide "dummy" s)
+
 sliceExp :: Exp -> Labels -> Exp 
 sliceExp e l = evalState (sliceExp' e toslice) vars where (toslice, vars) = labelIrrelevant e l
 
@@ -53,22 +56,26 @@ sliceBinds [] _ = return []
 sliceBinds (bd:bds) (Lbls (l:toslice)) = do 
    vars <- get
    let b = sliceBind bd l vars 
-   let (var, _) = bd
-   if b 
-      then do nextBds <- sliceBinds bds (Lbls toslice); return $ nextBds
-      else do put (vars \\ [name var]); nextBds <- sliceBinds bds (Lbls toslice); return $ [bd] ++ nextBds
+   let (var, e) = bd
+   if (b == (Just True)) 
+      then do nextBds <- sliceBinds bds (Lbls toslice); return $ nextBds -- slice the binding completely
+      else if (b == Nothing) 
+         then do put (vars \\ [name var]); nextBds <- sliceBinds bds (Lbls toslice); return $ [bd] ++ nextBds -- keep the binding
+         else do put (vars \\ [name var]); nextBds <- sliceBinds bds (Lbls toslice); return $ [(var, dummyExp (spanOf e))] ++ nextBds -- dummify the binding
 
-sliceBind :: (Ide, Exp) -> ToSlice -> UsedVars -> Bool 
-sliceBind bd (Lbl False) vars = False 
-sliceBind (var, e) (Lbl True) vars = if (name var) `elem` vars then False else True
+sliceBind :: (Ide, Exp) -> ToSlice -> UsedVars -> Maybe Bool 
+sliceBind bd (Lbl False) vars = Nothing -- this binding is necessary
+sliceBind (var, e) (Lbl True) vars = if (name var) `elem` vars 
+   then Just False -- this binding could be sliced away but it is used in some other expression so we need to dummify it
+   else Just True -- this binding can be sliced away
 
 sliceAssignment :: Ide -> Exp -> Span -> (Ide -> Exp -> Span -> Exp) -> ToSlice -> SliceState 
-sliceAssignment var e s def' (Lbl False) = return $ def' var e s
+sliceAssignment var e s def' (Lbl False) = do vars <- get; put (vars \\ [name var]); return $ def' var e s
 sliceAssignment var e s def' (Lbl True)  = do 
    vars <- get
    if (name var) `elem` vars 
-      then do put (vars \\ [name var]); return $ def' var e s
-      else return Empty
+      then do put (vars \\ [name var]); return $ def' var (dummyExp (spanOf e)) s
+      else do put (vars \\ [name var]); return Empty
 
 sliceBegin :: [Exp] -> Span -> ToSlice -> SliceState  
 sliceBegin es s (Lbl True) = return Empty 
@@ -99,20 +106,20 @@ labelIrrExp' e@(Let bds bdy s) l       = labelIrrLet e bds bdy s Let l
 labelIrrExp' e@(Ltt bds bdy s) l       = labelIrrLet e bds bdy s Ltt l 
 labelIrrExp' e@(Ltr bds bdy s) l       = labelIrrLet e bds bdy s Ltr l 
 labelIrrExp' e@(Lrr bds bdy s) l       = labelIrrLet e bds bdy s Lrr l
-labelIrrExp' e@(Dfv _ _ _) l           = labelIrrAssignment e l
-labelIrrExp' e@(Set _ _ _) l           = labelIrrAssignment e l  
+labelIrrExp' e@(Dfv var _ _) l         = labelIrrAssignment e l var
+labelIrrExp' e@(Set var _ _) l         = labelIrrAssignment e l var
 labelIrrExp' (Bgn es s) (Begin lbls)   = do es' <- mapM (uncurry labelIrrelevant') (zip es lbls)
                                             if null es' 
                                                then return $ Lbl True
                                                else return $ Lbls ([Lbl False] ++ es') 
 labelIrrExp' e@(Iff _ _ _ _) l         = labelIrrIf e l                            
 
-labelIrrAssignment :: Exp -> Labels -> LabelIrrState 
-labelIrrAssignment e (Binding g) = do  (sto, used) <- get
-                                       let (b, sto') = preserveWithSto sto g e
-                                       let used' = map name $ getVarsFromExp' e
-                                       if b then do put (sto, used); return $ Lbl True
-                                            else do put (sto', union used used'); return $ Lbl False
+labelIrrAssignment :: Exp -> Labels -> Ide -> LabelIrrState 
+labelIrrAssignment e (Binding g) var = do  (sto, used) <- get
+                                           let (b, sto') = preserveWithSto sto g e
+                                           let used' = map name $ getVarsFromExp' e
+                                           if b then do put (sto, used); return $ Lbl True
+                                                else do put (sto', (union used used') \\ [name var]); return $ Lbl False
 
 labelIrrLet :: Exp -> [(Ide, Exp)] -> Exp -> Span -> ([(Ide, Exp)] -> Exp -> Span -> Exp) -> Labels -> LabelIrrState
 labelIrrLet e bds bdy s let' (Lett g lbls lbl) = do (sto, used) <- get 
@@ -130,7 +137,7 @@ labelIrrBinding :: ((Ide, Exp), Labels) -> LabelIrrState
 labelIrrBinding ((var, exp), (Binding g)) = do (s, used) <- get
                                                let (b, s') = preserveWithSto s g (Set var exp NoSpan) 
                                                let used' = map name $ getVarsFromExp' exp
-                                               if b then do put (s, used); return (Lbl True) else do put (s', union used used'); return (Lbl False)      
+                                               if b then do put (s, used); return (Lbl True) else do put (s', (union used used') \\ [name var]); return (Lbl False)      
 
 labelIrrIf :: Exp -> Labels -> LabelIrrState 
 labelIrrIf e@(Iff b c a s) (If g lblC lblA) = do   (sto, used) <- get
