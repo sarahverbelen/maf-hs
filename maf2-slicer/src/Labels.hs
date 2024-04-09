@@ -2,7 +2,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 
-module Labels(labelSequence, Labels(..), isSkip) where 
+module Labels(labelSequence, Labels(..), isSkip, isVal) where 
 
 import Property.Agreement 
 import Property.Preservation
@@ -16,14 +16,39 @@ import Control.Monad.State
 import Data.List (union, delete)
 import qualified Data.Map as Map
 
-data Labels = Lett Agreement [Labels] Labels | If Agreement Labels Labels | Binding Agreement | Skip Agreement | Begin [Labels] deriving (Show, Eq)
-
-type LabelState = State (AbstractSto V, Agreement) Labels
+data Labels = Lett Agreement [Labels] Labels | If Agreement Labels Labels | Binding Agreement | Skip Agreement | Begin [Labels] | Val Agreement deriving (Show, Eq)
 
 isSkip :: Labels -> Bool 
 isSkip (Skip _) = True 
 isSkip _ = False
 
+isVal :: Labels -> Bool 
+isVal (Val _) = True 
+isVal _ = False
+
+labelSequence :: Exp -> Agreement -> Labels
+-- | label all statements in the sequence with agreements by backwards propagating the G-system rules
+labelSequence e g = relabelTailPos $ shiftLabels (evalState (labelExp e) (mempty, g)) g
+
+
+-- EXTRA PASS: ensure return values aren't sliced away
+relabelTailPos :: Labels -> Labels
+relabelTailPos l = relabelTailPos' l True
+
+relabelTailPos' :: Labels -> Bool -> Labels
+relabelTailPos' (Skip g) True = Val g 
+relabelTailPos' (Begin lbls) b = 
+    let     ls = map (\l' -> relabelTailPos' l' False) $ init lbls
+            l = relabelTailPos' (last lbls) b 
+    in Begin (ls ++ [l]) 
+relabelTailPos' (If g lblC lblA) b = If g (relabelTailPos' lblC b) (relabelTailPos' lblA b)
+relabelTailPos' (Lett g lblBds lblBdy) b = 
+    let     lblBds' = map (\l -> relabelTailPos' l False) lblBds 
+            lblBdy' = relabelTailPos' lblBdy b
+    in (Lett g lblBds' lblBdy')  
+relabelTailPos' e _ = e
+
+-- EXTRA PASS: ensure the labels are assigned to the correct expression
 shiftLabels :: Labels -> Agreement -> Labels 
 shiftLabels lbls g = evalState (shiftLabels' lbls) g
 
@@ -51,22 +76,12 @@ shiftLabels' (Lett g lblBds lblBdy)     = do    g' <- get
 --- G-SYSTEM RULES
 ---------------------------------------------------------------------------------------------------
 
-labelSequence :: Exp -> Agreement -> Labels
--- | label all statements in the sequence with agreements by backwards propagating the G-system rules
-labelSequence e g = shiftLabels (evalState (labelExp' e) (mempty, g)) g
-
--- | G-PP
-labelExp' :: Exp -> LabelState
-labelExp' e = do 
-    (sto, g) <- get
-    if (preserve sto g e)
-        then do put (sto, g); return (Skip g)
-        else do labelExp e
+type LabelState = State (AbstractSto V, Agreement) Labels
 
 labelExp :: Exp -> LabelState
 -- | G-CONCAT
 labelExp (Bgn es _) = do 
-    lbls <- sequence $ map labelExp' (reverse es) -- label the expressions back to front
+    lbls <- sequence $ map labelExp (reverse es) -- label the expressions back to front
     (_, g) <- get -- take the last agreement as the agreement for the whole begin
     return (Begin (reverse lbls))
 -- | G-ASSIGN
@@ -90,7 +105,7 @@ labelExp _ = labelSkip
 
 -- | G-LET
 labelLet :: [(Ide, Exp)] -> Exp -> LabelState
-labelLet bds bdy = do lblBody <- labelExp' bdy -- label the body
+labelLet bds bdy = do lblBody <- labelExp bdy -- label the body
                       lblBindings <- sequence $ map labelBinding (reverse bds) -- label the bindings in reverse order
                       (_, g) <- get 
                       return (Lett g (reverse lblBindings) lblBody)
@@ -111,10 +126,10 @@ labelBinding (var, e) = do  (sto, g) <- get
 -- | G-IF
 labelIf :: Exp -> Exp -> Exp -> LabelState
 labelIf b c a   = do (sto, g) <- get -- improve: update state
-                     lblC <- labelExp' c
+                     lblC <- labelExp c
                      (_, gc) <- get
                      put (sto, g) -- improve: update state
-                     lblA <- labelExp' a
+                     lblA <- labelExp a
                      (_, ga) <- get
                      let gb = map (\x -> (name x, PAll)) $ getVarsFromExp' b -- condition agreement (if agree on gb, same branch taken) (could be more precise)
                      let gIf = union ga $ union gc gb
@@ -126,6 +141,8 @@ labelSkip :: LabelState
 labelSkip = do (_, g) <- get; return (Skip g)
 
 
+
+-- unrelated helper
 deleteFromAL :: (Eq key) => key -> [(key, b)] -> [(key, b)]
 deleteFromAL _ [] = []
 deleteFromAL b ((a, x):r)

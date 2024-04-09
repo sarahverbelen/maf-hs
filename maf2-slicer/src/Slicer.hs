@@ -31,6 +31,7 @@ sliceExp :: Exp -> Labels -> Exp
 sliceExp e l = evalState (sliceExp' e toslice) vars where (toslice, vars) = labelIrrelevant e l
 
 sliceExp' :: Exp -> ToSlice -> SliceState 
+sliceExp' e (Lbl False)           = return e
 sliceExp' (Let bds bdy s) toslice = sliceLet bds bdy s Let toslice 
 sliceExp' (Ltt bds bdy s) toslice = sliceLet bds bdy s Ltt toslice 
 sliceExp' (Ltr bds bdy s) toslice = sliceLet bds bdy s Ltr toslice 
@@ -38,8 +39,7 @@ sliceExp' (Lrr bds bdy s) toslice = sliceLet bds bdy s Lrr toslice
 sliceExp' (Dfv var e s) toslice   = sliceAssignment var e s Dfv toslice
 sliceExp' (Set var e s) toslice   = sliceAssignment var e s Set toslice
 sliceExp' (Bgn es s) toslice      = sliceBegin es s toslice
-sliceExp' (Iff b c a s) toslice   = sliceIf b c a s toslice 
-sliceExp' e (Lbl False)           = return e 
+sliceExp' (Iff b c a s) toslice   = sliceIf b c a s toslice  
 sliceExp' e _                     = return (Nll (spanOf e))
 
 
@@ -77,7 +77,7 @@ sliceAssignment var e s def' (Lbl True)  = do
       then do put (vars \\ [name var]); return $ def' var (dummyExp (spanOf e)) s
       else do put (vars \\ [name var]); return (Nll s) 
 
-sliceBegin :: [Exp] -> Span -> ToSlice -> SliceState  
+sliceBegin :: [Exp] -> Span -> ToSlice -> SliceState 
 sliceBegin es s (Lbl True) = return (Nll s) 
 sliceBegin es s (Lbls ((Lbl False):lbls)) = do
    vars <- get
@@ -99,7 +99,11 @@ labelIrrelevant :: Exp -> Labels -> (ToSlice, UsedVars)
 labelIrrelevant e l = (e', vs) where (e', (_, vs)) = runState (labelIrrelevant' e l) (mempty, [])
 
 labelIrrelevant' :: Exp -> Labels -> LabelIrrState 
-labelIrrelevant' e l = if isSkip l then return (Lbl True) else labelIrrExp' e l
+labelIrrelevant' e l = if isSkip l 
+   then return (Lbl True) 
+   else if isVal l 
+      then return (Lbl False)
+      else labelIrrExp' e l
 
 labelIrrExp' :: Exp -> Labels -> LabelIrrState 
 labelIrrExp' e@(Let bds bdy s) l       = labelIrrLet e bds bdy s Let l
@@ -112,7 +116,7 @@ labelIrrExp' (Bgn es s) (Begin lbls)   = do es' <- mapM (uncurry labelIrrelevant
                                             if null es' 
                                                then return $ Lbl True
                                                else return $ Lbls ([Lbl False] ++ es') 
-labelIrrExp' e@(Iff _ _ _ _) l         = labelIrrIf e l                            
+labelIrrExp' e@(Iff _ _ _ _) l         = labelIrrIf e l                           
 
 labelIrrAssignment :: Exp -> Labels -> Ide -> LabelIrrState 
 labelIrrAssignment e (Binding g) var = do  (sto, used) <- get
