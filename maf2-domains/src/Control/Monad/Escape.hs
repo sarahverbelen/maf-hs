@@ -1,5 +1,5 @@
 {-# LANGUAGE FlexibleContexts, FlexibleInstances, TypeFamilies, AllowAmbiguousTypes, DeriveFunctor #-}
-module Control.Monad.Escape (MonadEscape(..), MayEscape(Value), MayEscapeT(..), orElse, try) where
+module Control.Monad.Escape (MonadEscape(..), MayEscape(..), MayEscapeT(..), orElse, try) where
 
 import Lattice hiding (Bottom)
 import Domain.Class 
@@ -30,7 +30,7 @@ data MayEscape e v = Bottom
                    | Escape e 
                    | Value v
                    | MayBoth v e
-   deriving (Eq, Ord, Functor)
+   deriving (Eq, Ord, Functor, Show)
 
 addError :: Joinable e => e -> MayEscape e a -> MayEscape e a
 addError _ Bottom = Bottom

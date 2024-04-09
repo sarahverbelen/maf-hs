@@ -64,7 +64,7 @@ generateStates e s = xCovering (Map.keys s) (extendState (getVarsFromExp' e) s)
 --- ABSTRACT EVALUATION
 ---------------------------------------------------------------------------------------------------
 
-abstractEvalForCovering :: Exp -> AbstractSto V -> V
+abstractEvalForCovering :: Exp -> AbstractSto V -> Value
 -- | extend the abstract store with all other variables in Exp, set all of their values to Top 
 --   compute the X-covering (X = all variables in the store before we extended it) of this abstract store
 --   run the abstract interpreter for the expression using these stores as initial states
@@ -74,14 +74,14 @@ abstractEvalForCovering e sto = foldr join bottom (map (abstractEval e) (generat
 abstractStoToEnv :: AbstractSto V -> Map.Map String Ide -- temporary: need to keep track of environment as well as store
 abstractStoToEnv s = Map.union (Map.fromList $ map (\(ide, v) -> (name ide, ide)) (Map.toList s)) (initialEnv prmAdr)
 
-abstractEval' :: Exp -> AbstractSto V -> (V, AbstractSto V)
+abstractEval' :: Exp -> AbstractSto V -> (Value, AbstractSto V)
 -- | version of abstractEval that also returns the updated store
 abstractEval' e s = (v, values sto') where (v, sto') = analyze'' (e, env, (), Ghost) $ sto
                                            s' = extendStateForExp e s
                                            env = abstractStoToEnv s'
                                            sto = fromValues $ Map.union s (initialSto env)
 
-abstractEval :: Exp -> AbstractSto V -> V
+abstractEval :: Exp -> AbstractSto V -> Value
 -- | finds the abstract value of the expression in the given abstract state
 abstractEval e s = fst $ abstractEval' e s
                             
@@ -104,9 +104,11 @@ instance SchemeAlloc () Ide V () where
 
 getValue :: MayEscape (Set DomainError) V -> V 
 getValue (Value v) = v
-getValue _ = bottom
+getValue v = bottom
 
-analyze' :: (Exp, Map.Map String Ide, (), GT ()) -> DSto () V -> V
+type Value = MayEscape (Set DomainError) V
+
+analyze' :: (Exp, Map.Map String Ide, (), GT ()) -> DSto () V -> Value
 analyze' (exp, env, ctx, _) store =  
        let ((res, _), _) = Semantics.eval exp
               & runEvalT
@@ -124,9 +126,9 @@ analyze' (exp, env, ctx, _) store =
               & runAlloc @VrAdr @Ide @() @Ide (\from ctx -> from)
               & runCtx @() ctx
               & runIdentity      
-       in getValue res
+       in res --getValue res
 
-analyze'' :: (Exp, Map.Map String Ide, (), GT ()) -> DSto () V -> (V, DSto () V)
+analyze'' :: (Exp, Map.Map String Ide, (), GT ()) -> DSto () V -> (Value, DSto () V)
 analyze'' (exp, env, ctx, _) store =  
        let ((res, _), sto) = Semantics.eval exp
               & runEvalT
@@ -144,7 +146,7 @@ analyze'' (exp, env, ctx, _) store =
               & runAlloc @VrAdr @Ide @() @Ide (\from ctx -> from)
               & runCtx @() ctx
               & runIdentity      
-       in (getValue res, sto)       
+       in (res, sto) --(getValue res, sto)       
 
 
 -- auxiliary function that extracts the variables used in an expression

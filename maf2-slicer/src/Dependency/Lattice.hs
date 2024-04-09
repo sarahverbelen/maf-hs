@@ -5,6 +5,8 @@ module Dependency.Lattice where
 import Domain hiding (Exp)
 import Lattice
 import Syntax.Scheme.AST (Ide, Exp)
+import qualified Control.Monad.Escape as Escape
+
 import Prelude hiding (null)
 
 class (JoinLattice v) => AtomicLattice v where 
@@ -79,3 +81,13 @@ instance (TopLattice (ModularSchemeValue r i c b pai vec str var exp env), Refin
 instance (AtomicLattice r, AtomicLattice i, AtomicLattice c, AtomicLattice b, RealDomain r, IntDomain i, CharDomain c, BoolDomain b, Address pai, Address vec, Address str, Ord env, Ord exp, Show env)
     => AtomicLattice (ModularSchemeValue r i c b pai vec str var exp env) where
         atom v = (atom $ real v) || (atom $ integer v) || (atom $ boolean v)
+
+
+instance (AtomicLattice a, Joinable e, Eq e) => AtomicLattice (Escape.MayEscape e a) where 
+    atom Escape.Bottom = False 
+    atom (Escape.Escape _) = False 
+    atom (Escape.Value v) = atom v 
+    atom (Escape.MayBoth v _) = atom v        
+
+instance (TopLattice a, Joinable e, Eq e) => TopLattice (Escape.MayEscape e a) where 
+    top = Escape.Value top    
