@@ -1,4 +1,5 @@
 (define x 8)
-(define y 7)
-(define z (* x 0))
+(define a 0)
+(define y a)
+(define z (* y 0))
 z

@@ -47,5 +47,5 @@ testLabeling = do
     -- putStrLn $ show $ atomicExpression' 4 e PInt (extendStateForExp e mempty)
     -- putStrLn $ show $ dependencies e (Just PInt) mempty
     -- putStrLn $ show $ labelSequence e testX
-    -- putStrLn $ show $ slice e testX
-    putStrLn $ show $ sliceUsed e testX
+    putStrLn $ show $ slice e testX
+    putStrLn $ show $ labelIrrelevant e (labelSequence e testX)
