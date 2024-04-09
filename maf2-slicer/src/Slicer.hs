@@ -82,7 +82,8 @@ sliceBegin es s (Lbl True) = return (Nll s)
 sliceBegin es s (Lbls ((Lbl False):lbls)) = do
    vars <- get
    es' <- mapM (\(e, l) -> sliceExp' e l) (zip es lbls)
-   return $ Bgn es' s
+   let es'' = (filter (\e -> not $ isNll e) (init es')) ++ [last es']
+   return $ Bgn es'' s
 
 sliceIf :: Exp -> Exp -> Exp -> Span -> ToSlice -> SliceState
 sliceIf b c a s (Lbl True) = return (Nll s) 

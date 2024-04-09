@@ -2,7 +2,7 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
-module Syntax.Scheme.AST (Exp(..), Ide(..), parseSchemeExp, parseSchemeExp', testParser, isDefine, spanOf, Span(..), Hdl(..)) where
+module Syntax.Scheme.AST (Exp(..), Ide(..), parseSchemeExp, parseSchemeExp', testParser, isDefine, isNll, spanOf, Span(..), Hdl(..)) where
 
 
 import Data.Hashable
@@ -64,6 +64,10 @@ isDefine :: Exp -> Bool
 isDefine (Dfv {}) = True
 isDefine (Dff {}) = True
 isDefine _ = False
+
+isNll :: Exp -> Bool 
+isNll (Nll _) = True 
+isNll _ = False
 
 -- | Returns the span of the AST node
 spanOf :: Exp -> Span
