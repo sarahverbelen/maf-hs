@@ -119,7 +119,7 @@ labelBinding (var, e) = do  eLbl <- labelExp e
                             (sto, g) <- get 
                             -- if the assigned variable is in the agreement
                             -- then the new agreement contains all variables that this expression is dependent on + all of the previous ones except the current one being assigned
-                            let g' = if (name var) `elem` (map fst g) then union (deleteFromAL (name var) g) $ dependencies e (lookup (name var) g) sto else g
+                            let g' = if (name var) `elem` (map fst g) then union (deleteFromAL (name var) g) $ findNDeps e (lookup (name var) g) sto else g
                             -- else the agreement stays the same
                             let (v, sto') = abstractEval' e sto
                             -- update the state
