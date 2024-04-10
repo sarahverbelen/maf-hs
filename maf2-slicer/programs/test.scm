@@ -1,9 +1,6 @@
-(define x 8)
-(define a 0)
-(define y a)
-(define y 2)
-(define z (+ x y))
-(begin a
+(define x (let ((y 8)
+                (z 7)
+                (a 0))
+                (+ y z)))
+(define z x)
 z
-z
-z)

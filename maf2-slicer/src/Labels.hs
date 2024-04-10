@@ -16,7 +16,7 @@ import Control.Monad.State
 import Data.List (union, delete)
 import qualified Data.Map as Map
 
-data Labels = Lett Agreement [Labels] Labels | If Agreement Labels Labels | Binding Agreement | Skip Agreement | Begin [Labels] | Val Agreement deriving (Show, Eq)
+data Labels = Lett Agreement [Labels] Labels | If Agreement Labels Labels | Binding Agreement Labels | Skip Agreement | Begin [Labels] | Val Agreement deriving (Show, Eq)
 
 isSkip :: Labels -> Bool 
 isSkip (Skip _) = True 
@@ -60,8 +60,10 @@ shiftLabels' (Skip g)                   = do    g' <- get; put g
                                                 return $ Skip g'
 shiftLabels' (Begin lbls)               = do    lbls' <- mapM shiftLabels' (reverse lbls)
                                                 return $ Begin (reverse lbls')
-shiftLabels' (Binding g)                = do    g' <- get; put g
-                                                return $ Binding g'
+shiftLabels' (Binding g lbl)           = do     g' <- get
+                                                lbl' <- shiftLabels' lbl
+                                                put g
+                                                return $ Binding g' lbl
 shiftLabels' (If g lblC lblA)           = do    g' <- get
                                                 lblA' <- shiftLabels' lblA; put g' 
                                                 lblC' <- shiftLabels' lblC; put g 
@@ -112,16 +114,16 @@ labelLet bds bdy = do lblBody <- labelExp bdy -- label the body
 
 -- | G-ASSIGN
 labelBinding :: (Ide, Exp) -> LabelState
-labelBinding (var, e) = do  (sto, g) <- get 
+labelBinding (var, e) = do  eLbl <- labelExp e
+                            (sto, g) <- get 
                             -- if the assigned variable is in the agreement
                             -- then the new agreement contains all variables that this expression is dependent on + all of the previous ones except the current one being assigned
                             let g' = if (name var) `elem` (map fst g) then union (deleteFromAL (name var) g) $ dependencies e (lookup (name var) g) sto else g
                             -- else the agreement stays the same
                             let (v, sto') = abstractEval' e sto
                             -- update the state
-                            --let sto' = Map.insert var v sto
                             put (sto', g')
-                            return (Binding g')
+                            return (Binding g' eLbl)
 
 -- | G-IF
 labelIf :: Exp -> Exp -> Exp -> LabelState

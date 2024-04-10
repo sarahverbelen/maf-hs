@@ -46,7 +46,7 @@ noDep' n p (x, px) e sto = (atomicExpression' n e p sto) || and (map (noDep' (n 
 
 dependencies :: Exp -> Maybe Property -> AbstractSto V -> [(String, Property)] 
 -- | returns a list of all variables the expression is dependent on for the given property (based on the findNDep algorithm)
-dependencies e (Just p) sto = map (\(a, b) -> (name a, b)) $ if atomicExpression' iterationCount e p sto then vars else vars \\ noDeps 
+dependencies e (Just p) sto = map (\(a, b) -> (name a, b)) $ if atomicExpression' iterationCount e p sto then vars else  noDeps 
     where   vars = map (\x -> (x, PAll)) (getVarsFromExp' e) -- to improve: figure out what property is a dependency
             noDeps = filter (\x -> noDep' iterationCount p x e (extendStateForExp e sto)) vars
 dependencies _ Nothing _ = error "no property given to find dependencies"
