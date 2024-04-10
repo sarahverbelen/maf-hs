@@ -10,7 +10,7 @@ import Dependency.State
 import Dependency.Lattice
 -- import Property.Preservation
 import Property.Agreement
--- import Labels
+import Labels
 import Syntax.Scheme.AST
 import Syntax.Scheme
 import Slicer
@@ -40,14 +40,12 @@ testLabeling = do
     let e = fromJust $ parseString contents
     let e' =  slice e testX
     putStrLn $ show e
-    putStrLn $ show $  abstractEval e (extendStateForExp e mempty)
     putStrLn $ show e' 
-    putStrLn $ show $  abstractEval e' (extendStateForExp e' mempty)
     -- putStrLn $ show $ (extendStateForExp e mempty)
     -- putStrLn $ show $ abstractEval e (extendStateForExp e mempty) 
     -- putStrLn $ show $ preserveWithSto mempty testX e
     -- putStrLn $ show $ xCoveringByProp testIde PInt (extendStateForExp e mempty)
-    -- putStrLn $ show $ noDep PInt (testIde, PInt) e (extendStateForExp e mempty)
+    -- putStrLn $ show $ noDep' 16 PInt (testIde, PInt) e (extendStateForExp e mempty)
     -- putStrLn $ show $ atomicExpression' 4 e PInt (extendStateForExp e mempty)
     -- putStrLn $ show $ findNDeps e (Just PInt) mempty
     -- putStrLn $ show $ labelSequence e testX

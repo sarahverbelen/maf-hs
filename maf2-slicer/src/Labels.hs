@@ -136,8 +136,11 @@ labelIf b c a   = do (sto, g) <- get -- improve: update state
                      (_, ga) <- get
                      let gb = map (\x -> (name x, PAll)) $ getVarsFromExp' b -- condition agreement (if agree on gb, same branch taken) (could be more precise)
                      let gIf = union ga $ union gc gb
-                     put (sto, gIf)
-                     return (If gIf lblC lblA)
+                     if (preserve sto g c) && (preserve sto g a) 
+                        then do put (sto, g)
+                                return (Skip g)
+                        else do put (sto, gIf)
+                                return (If gIf lblC lblA)
 
 -- | G-SKIP
 labelSkip :: LabelState
