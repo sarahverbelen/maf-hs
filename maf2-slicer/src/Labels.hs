@@ -46,6 +46,7 @@ relabelTailPos' (Lett g lblBds lblBdy) b =
     let     lblBds' = map (\l -> relabelTailPos' l False) lblBds 
             lblBdy' = relabelTailPos' lblBdy b
     in (Lett g lblBds' lblBdy')  
+relabelTailPos' (Binding g lbls) b = (Binding g (relabelTailPos' lbls True))
 relabelTailPos' e _ = e
 
 -- EXTRA PASS: ensure the labels are assigned to the correct expression

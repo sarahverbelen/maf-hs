@@ -6,30 +6,30 @@ import Prelude hiding (span)
 
 import Data.List (intercalate)
 import Dependency.State
-import Dependency.Dependency
+-- import Dependency.Dependency
 import Dependency.Lattice
-import Property.Preservation
+-- import Property.Preservation
 import Property.Agreement
-import Labels
+-- import Labels
 import Syntax.Scheme.AST
 import Syntax.Scheme
 import Slicer
 
-import Analysis.Scheme.Primitives
+-- import Analysis.Scheme.Primitives
 
 
 
 import Data.Maybe
-import qualified Data.Map as Map
+-- import qualified Data.Map as Map
 
 testX :: Agreement
-testX = [("z", PInt)]
+testX = [("x", PInt)]
 
 testIde :: Ide 
 testIde = Ide "x" NoSpan
 
 testProgram :: String
-testProgram = "programs/test.scm"
+testProgram = "programs/test2.scm"
 
 printStores :: [AbstractSto V] -> IO ()
 printStores s = putStrLn $ intercalate "\n" (map show s)
@@ -50,6 +50,6 @@ testLabeling = do
     -- putStrLn $ show $ noDep PInt (testIde, PInt) e (extendStateForExp e mempty)
     -- putStrLn $ show $ atomicExpression' 4 e PInt (extendStateForExp e mempty)
     -- putStrLn $ show $ dependencies e (Just PInt) mempty
-    putStrLn $ show $ labelSequence e testX
+    -- putStrLn $ show $ labelSequence e testX
     -- putStrLn $ show $ slice e testX
     -- putStrLn $ show $ labelIrrelevant e (labelSequence e testX)

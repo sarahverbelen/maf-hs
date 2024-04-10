@@ -11,6 +11,7 @@ import Syntax.Scheme.AST
 import Control.Monad.State
 
 import qualified Data.Map as Map
+import Data.List (find)
 
 type PreserveState = State (AbstractSto V) Bool
 
@@ -59,15 +60,15 @@ preserveLet binds bdy g = do  bs <- sequence $ map (preserveBinding g) binds
 
 -- | PP-ASSIGN              
 preserveBinding :: Agreement -> (Ide, Exp) -> PreserveState             
-preserveBinding g (var, e) = do let mkIde i = Ide (name i) NoSpan -- assume variables are unique by name (because different Ide =/= different variable..)
+preserveBinding g (var, e) = do let findValue nm st = fmap snd $ find (\(a, b) -> name a == nm) $ Map.toList st 
                                 s <- get
                                 let v = abstractEvalForCovering e s
                                 -- update the value in our abstract state
-                                let s' = Map.insert (mkIde var) (getValue v) s
+                                let s' = Map.insert var (getValue v) s
                                 put s'
                                 -- if this variable is in the agreement, we need to check if the property is preserved by the assignment     
                                 -- if the variable wasn't defined yet and it is in the agreement, the property is not preserved (ensures we don't remove the first definition of necessary variables!)
-                                let b = (not ((name var) `elem` (map fst g))) || ((v /= top) && ((Map.lookup (mkIde var) s) /= Nothing) && ((getValue v) `elem` Map.lookup (mkIde var) s))
+                                let b = (not ((name var) `elem` (map fst g))) || ((v /= top) && ((findValue (name var) s) /= Nothing) && ((getValue v) `elem` (findValue (name var) s)))
                                 return b
 
 -- |PP-IF (assumes no side effects in condition)
