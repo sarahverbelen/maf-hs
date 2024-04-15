@@ -116,7 +116,12 @@ labelIrrExp' e@(Ltt bds bdy s) l       = labelIrrLet e bds bdy s Ltt l
 labelIrrExp' e@(Ltr bds bdy s) l       = labelIrrLet e bds bdy s Ltr l 
 labelIrrExp' e@(Lrr bds bdy s) l       = labelIrrLet e bds bdy s Lrr l
 labelIrrExp' e@(Dfv var e' _) l        = labelIrrAssignment e (var, e') l
-labelIrrExp' e@(Set var e' _) l        = labelIrrAssignment e (var, e') l
+labelIrrExp' e@(Set var e' _) l        = do  r <- labelIrrAssignment e (var, e') l
+                                             (s, used) <- get
+                                             let used' = union used [(name var)]
+                                             put (s, used')
+                                             return r
+
 labelIrrExp' (Bgn es s) (Begin lbls)   = do es' <- mapM (uncurry labelIrrelevant') (zip es lbls)
                                             if null es' 
                                                then return $ Lbl True
