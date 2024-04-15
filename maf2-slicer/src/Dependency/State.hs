@@ -17,7 +17,7 @@ import Analysis.Monad
 import Analysis.Scheme.Store
 import Control.SVar.ModX
 import Control.Monad.DomainError
-import Domain.Scheme hiding (Exp)
+import Domain.Scheme hiding (Exp, null)
 
 import qualified Data.Map as Map hiding (partition)
 import Data.List (groupBy, partition, nubBy)
@@ -30,7 +30,7 @@ type AbstractSto v = Map.Map Ide v
 
 covering :: AbstractSto V -> [AbstractSto V]
 -- | a covering of a state s is a set of refinements of that state such that all possible values are accounted for
-covering s = fmap Map.fromList (sequence $ groupBy (\ a b -> fst a == fst b) [(k, v') | (k, v) <- Map.toList s, v' <- refine v])
+covering s = fmap Map.fromList (filter (not . null) (sequence $ groupBy (\ a b -> fst a == fst b) [(k, v') | (k, v) <- Map.toList s, v' <- refine v]))
 
 xCovering :: [Ide] -> AbstractSto V -> [AbstractSto V]
 -- | values of variables outside some set X take values that are the same as either the corresponding values in s or their direct subvalues

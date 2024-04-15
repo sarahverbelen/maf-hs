@@ -33,20 +33,6 @@ noDep ::  Property -> (Ide, Property) -> Exp -> AbstractSto V -> Bool
 -- | holds if there is no dependency of e on x
 noDep p (x, px) e sto = (atomicExpression e p sto) || and (map (noDep p (x, px) e) $ xCoveringByProp x px sto)
 
--- versions limited by iteration count
-iterationCount :: Int 
-iterationCount = 16
-
-atomicExpression' :: Int -> Exp -> Property -> AbstractSto V -> Bool 
--- | holds if the expression has an atomic value, either by direct computation or by case analysis of the coverings
-atomicExpression' 0 e p sto = (atomByProp p $ abstractEval e sto)
-atomicExpression' n e p sto = (atomByProp p $ abstractEval e sto) || and (map (atomicExpression' (n - 1) e p) $ covering sto)
-
-noDep' ::  Int -> Property -> (Ide, Property) -> Exp -> AbstractSto V -> Bool 
--- | holds if there is no dependency of e on x
-noDep' 0 p (x, px) e sto = (atomicExpression' iterationCount e p sto) 
-noDep' n p (x, px) e sto = (atomicExpression' n e p sto) || and (map (noDep' (n - 1) p (x, px) e) $ xCoveringByProp x px sto)
-
 
 findNDeps :: Exp -> (Maybe Property) -> AbstractSto V -> Deps 
 findNDeps e (Just p) s = 
@@ -61,7 +47,7 @@ prove e s xs p = evalState (prove' e s xs p) []
 
 prove' :: Exp -> AbstractSto V -> [(Ide, Property)] -> Property -> State Deps Deps 
 prove' e s xs p = 
-    if and $ map (\x -> (noDep' iterationCount p x e s)) xs
+    if and $ map (\x -> (noDep p x e s)) xs
         then do nonDep <- get 
                 let nonDep' = union nonDep $ map (\(a, b) -> (name a, b)) xs
                 put nonDep'
