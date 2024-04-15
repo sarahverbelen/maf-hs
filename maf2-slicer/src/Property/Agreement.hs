@@ -3,8 +3,7 @@
 
 module Property.Agreement where 
 
---type Agreement = [String] -- a list of the variables that have to have the same abstract value 
-
 data Property = PReal | PInt | PBool | PAll deriving (Show, Eq)
+-- the property is the relevant 'field' of the modular scheme value (PAll = all fields are relevant/we don't know what field is relevant)
 
-type Agreement = [(String, Property)]
+type Agreement = [(String, Property)] 

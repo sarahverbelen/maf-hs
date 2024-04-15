@@ -10,7 +10,7 @@ import Dependency.State
 import Dependency.Lattice
 -- import Property.Preservation
 import Property.Agreement
-import Labels
+-- import Labels
 import Syntax.Scheme.AST
 import Syntax.Scheme
 import Slicer
@@ -29,7 +29,7 @@ testIde :: Ide
 testIde = Ide "x" NoSpan
 
 testProgram :: String
-testProgram = "programs/test2.scm"
+testProgram = "programs/test.scm"
 
 printStores :: [AbstractSto V] -> IO ()
 printStores s = putStrLn $ intercalate "\n" (map show s)
@@ -42,7 +42,7 @@ testLabeling = do
     putStrLn $ show e
     putStrLn $ show e' 
     -- putStrLn $ show $ (extendStateForExp e mempty)
-    -- putStrLn $ show $ abstractEval e (extendStateForExp e mempty) 
+    -- putStrLn $ show $ abstractEval e mempty 
     -- putStrLn $ show $ preserveWithSto mempty testX e
     -- putStrLn $ show $ xCoveringByProp testIde PInt (extendStateForExp e mempty)
     -- putStrLn $ show $ noDep' 16 PInt (testIde, PInt) e (extendStateForExp e mempty)

@@ -2,6 +2,6 @@
       (y 6)
       (z 7))
   (if (< z 6)       
-    (set! x (* y 2))    
-    (set! x (* y -2)))  
+    8    
+    (begin (set! x (* y -2))))  
   x)
