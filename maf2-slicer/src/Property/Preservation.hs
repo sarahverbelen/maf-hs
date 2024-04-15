@@ -54,7 +54,7 @@ preserve' _ _                   = return True
 
 -- | PP-LET
 preserveLet :: [(Ide, Exp)] -> Exp -> Agreement -> PreserveState
-preserveLet binds bdy g = do  bs <- sequence $ map (preserveBinding g) binds
+preserveLet binds bdy g = do  bs <- mapM (preserveBinding g) binds
                               b <- preserve' bdy g
                               return $ b && and bs
 

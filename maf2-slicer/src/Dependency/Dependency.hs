@@ -8,7 +8,7 @@ import Data.List ((\\), union)
 import Control.Monad.State
 
 import Syntax.Scheme.AST
-import Domain.Scheme hiding (Exp)
+import Domain.Scheme hiding (Exp, null)
 import qualified Control.Monad.Escape as Escape
 
 atomByProp' :: Property -> V -> Bool 
@@ -24,15 +24,32 @@ atomByProp _ v = atom v
 
 type Deps = [(String, Property)] 
 
+atomicExpression' :: Exp -> Property -> AbstractSto V -> Bool 
+atomicExpression' e p sto = (atomByProp p $ abstractEval e sto) 
+
 -- possibly infinitely looping versions
 atomicExpression :: Exp -> Property -> AbstractSto V -> Bool 
 -- | holds if the expression has an atomic value, either by direct computation or by case analysis of the coverings
-atomicExpression e p sto = (atomByProp p $ abstractEval e sto) || and (map (atomicExpression e p) $ covering sto)
+atomicExpression e p sto = 
+    let b = atomicExpression' e p sto
+        stos = covering sto 
+        b' = if (null stos) 
+                then False 
+                else and (map (atomicExpression' e p) $ covering sto)
+    in b || b'
+
+noDep' ::  Property -> Exp -> AbstractSto V -> Bool
+noDep' p e sto = atomicExpression e p sto
 
 noDep ::  Property -> (Ide, Property) -> Exp -> AbstractSto V -> Bool 
 -- | holds if there is no dependency of e on x
-noDep p (x, px) e sto = (atomicExpression e p sto) || and (map (noDep p (x, px) e) $ xCoveringByProp x px sto)
-
+noDep p (x, px) e sto = 
+    let b = noDep' p e sto
+        stos = xCoveringByProp x px sto
+        b' = if (null stos)
+                then False 
+                else and (map (noDep' p e) stos)
+    in b || b' 
 
 findNDeps :: Exp -> (Maybe Property) -> AbstractSto V -> Deps 
 findNDeps e (Just p) s = 

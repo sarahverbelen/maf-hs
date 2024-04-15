@@ -31,7 +31,7 @@ labelSequence :: Exp -> Agreement -> Labels
 labelSequence e g = relabelTailPos $ shiftLabels (evalState (labelExp e) (mempty, g)) g
 
 
--- EXTRA PASS: ensure return values aren't sliced away
+-- EXTRA PASS: ensure return values aren't sliced away TODO: rename
 relabelTailPos :: Labels -> Labels
 relabelTailPos l = relabelTailPos' l True
 
@@ -109,7 +109,7 @@ labelExp _ = labelSkip
 -- | G-LET
 labelLet :: [(Ide, Exp)] -> Exp -> LabelState
 labelLet bds bdy = do lblBody <- labelExp bdy -- label the body
-                      lblBindings <- sequence $ map labelBinding (reverse bds) -- label the bindings in reverse order
+                      lblBindings <- mapM labelBinding (reverse bds) -- label the bindings in reverse order
                       (_, g) <- get 
                       return (Lett g (reverse lblBindings) lblBody)
 
@@ -119,7 +119,7 @@ labelBinding (var, e) = do  eLbl <- labelExp e
                             (sto, g) <- get 
                             -- if the assigned variable is in the agreement
                             -- then the new agreement contains all variables that this expression is dependent on + all of the previous ones except the current one being assigned
-                            let g' = if (name var) `elem` (map fst g) then union (deleteFromAL (name var) g) $ findNDeps e (lookup (name var) g) sto else g
+                            let g' = if (name var) `elem` (map fst g) then union (deleteFromAL (name var) g) $ findNDeps e (lookup (name var) g) (extendStateForExp e sto) else g
                             -- else the agreement stays the same
                             let (v, sto') = abstractEval' e sto
                             -- update the state

@@ -80,7 +80,7 @@ instance (TopLattice (ModularSchemeValue r i c b pai vec str var exp env), Refin
 
 instance (AtomicLattice r, AtomicLattice i, AtomicLattice c, AtomicLattice b, RealDomain r, IntDomain i, CharDomain c, BoolDomain b, Address pai, Address vec, Address str, Ord env, Ord exp, Show env)
     => AtomicLattice (ModularSchemeValue r i c b pai vec str var exp env) where
-        atom v = (atom $ real v) || (atom $ integer v) || (atom $ boolean v)
+        atom v = (atom $ real v) && (atom $ integer v) && (atom $ boolean v)
 
 
 instance (AtomicLattice a, Joinable e, Eq e) => AtomicLattice (Escape.MayEscape e a) where 
