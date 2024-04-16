@@ -54,8 +54,10 @@ testLabeling = do
     let e = fromJust $ parseString contents
     -- putStrLn $ show $ findNDeps e (Just PInt) $ extendStateForExp e mempty
     -- putStrLn $ show $ findNDeps e (Just PInt) mempty
-    let e' =  slice e testX
     putStrLn $ show e
+    putStrLn $ show $ labelSequence e testX
+    putStrLn $ show $ labelIrrelevant e (labelSequence e testX)
+    let e' =  slice e testX
     putStrLn $ show e' 
     -- printCoverings (extendStateForExp e mempty)
     -- printXCoverings (extendStateForExp e mempty)
@@ -66,6 +68,5 @@ testLabeling = do
     -- putStrLn $ show $ noDep PInt (testIde, PInt) e (extendStateForExp e mempty)
     -- putStrLn $ show $ atomicExpression e PInt (extendStateForExp e mempty)
     -- putStrLn $ show $ findNDeps e (Just PInt) (extendStateForExp e mempty)
-    putStrLn $ show $ labelSequence e testX
     -- putStrLn $ show $ slice e testX
-    putStrLn $ show $ labelIrrelevant e (labelSequence e testX)
+    

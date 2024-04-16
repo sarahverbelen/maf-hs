@@ -117,16 +117,16 @@ labelLet bds bdy = do lblBody <- labelExp bdy -- label the body
 
 -- | G-ASSIGN
 labelBinding :: (Ide, Exp) -> LabelState
-labelBinding (var, e) = do  eLbl <- labelExp e
-                            (sto, g) <- get 
+labelBinding (var, e) = do  (sto, g) <- get
+                            eLbl <- labelBindingExp e 
                             -- if the assigned variable is in the agreement
                             -- then the new agreement contains all variables that this expression is dependent on + all of the previous ones except the current one being assigned
                             let g' = if (name var) `elem` (map fst g) then union (deleteFromAL (name var) g) $ findNDeps e (lookup (name var) g) (extendStateForExp e sto) else g
                             -- else the agreement stays the same
-                            let (v, sto') = abstractEval' e sto
+                            let (v, sto') = abstractEval' (Dfv var e NoSpan) sto
                             -- update the state
                             put (sto', g')
-                            return (Binding g' eLbl)
+                            return (Binding g' eLbl)         
 
 -- | G-IF
 labelIf :: Exp -> Exp -> Exp -> LabelState
@@ -150,6 +150,11 @@ labelIf b c a   = do (sto, g) <- get -- improve: update state
 labelSkip :: LabelState
 labelSkip = do (_, g) <- get; return (Skip g)
 
+
+labelBindingExp :: Exp -> LabelState 
+-- | labels the expressions bound to a variable
+-- needs to know what variables are necessary for the return value
+labelBindingExp e = labelExp e
 
 
 -- unrelated helper
