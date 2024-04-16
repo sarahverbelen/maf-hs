@@ -31,7 +31,7 @@ labelSequence :: Exp -> Agreement -> Labels
 labelSequence e g = relabelTailPos $ shiftLabels (evalState (labelExp e) (mempty, g)) g
 
 
--- EXTRA PASS: ensure return values aren't sliced away TODO: rename
+-- EXTRA PASS: ensure return values aren't sliced away TODO: rename (possibly no longer necessary when labelBindingExp is done)
 relabelTailPos :: Labels -> Labels
 relabelTailPos l = relabelTailPos' l True
 
@@ -118,7 +118,7 @@ labelLet bds bdy = do lblBody <- labelExp bdy -- label the body
 -- | G-ASSIGN
 labelBinding :: (Ide, Exp) -> LabelState
 labelBinding (var, e) = do  (sto, g) <- get
-                            eLbl <- labelBindingExp e 
+                            eLbl <- labelBindingExp var e 
                             -- if the assigned variable is in the agreement
                             -- then the new agreement contains all variables that this expression is dependent on + all of the previous ones except the current one being assigned
                             let g' = if (name var) `elem` (map fst g) then union (deleteFromAL (name var) g) $ findNDeps e (lookup (name var) g) (extendStateForExp e sto) else g
@@ -151,10 +151,30 @@ labelSkip :: LabelState
 labelSkip = do (_, g) <- get; return (Skip g)
 
 
-labelBindingExp :: Exp -> LabelState 
+labelBindingExp :: Ide -> Exp -> LabelState 
 -- | labels the expressions bound to a variable
 -- needs to know what variables are necessary for the return value
-labelBindingExp e = labelExp e
+labelBindingExp var e = do 
+    (sto, g) <- get
+    let p = (lookup (name var) g)
+    let g' = if (p == Nothing) 
+                then findFinalAgreement e g (Just PAll) 
+                else findFinalAgreement e g p
+    put (sto, union g g') 
+    labelExp e 
+
+findFinalAgreement :: Exp -> Agreement -> Maybe Property -> Agreement 
+-- | finds the agreement necessary to have the same return value for the expression 
+-- (aka all variables that have an influence on the return values)
+findFinalAgreement (Bgn es _)  g p = findFinalAgreement (last es) g p
+findFinalAgreement (Let _ bdy _) g p = findFinalAgreement bdy g p
+findFinalAgreement (Ltt _ bdy _) g p = findFinalAgreement bdy g p
+findFinalAgreement (Ltr _ bdy _) g p = findFinalAgreement bdy g p
+findFinalAgreement (Lrr _ bdy _) g p = findFinalAgreement bdy g p
+findFinalAgreement (Iff _ c a _) g p = union (findFinalAgreement c g p) (findFinalAgreement a g p)
+findFinalAgreement (Dfv _ _ _)   g p = g 
+findFinalAgreement (Set _ _ _)   g p = g 
+findFinalAgreement e             g p = findNDeps e p (extendStateForExp e mempty)
 
 
 -- unrelated helper

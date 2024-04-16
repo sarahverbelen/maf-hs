@@ -66,11 +66,11 @@ sliceBinds (bd:bds) (l@(BindingS _ eLbl):toslice) = do
    vars <- get
    let b = sliceBind bd l vars 
    let (var, e) = bd
-   e' <- sliceExp' e eLbl
+   -- e' <- sliceExp' e eLbl
    if (b == (Just True)) 
       then do nextBds <- sliceBinds bds toslice; return $ nextBds -- slice the binding completely
       else if (b == Nothing) 
-         then do put (vars \\ [name var]); nextBds <- sliceBinds bds toslice; return $ [(var, e')] ++ nextBds -- keep the binding
+         then do put (vars \\ [name var]); nextBds <- sliceBinds bds toslice; return $ [(var, e)] ++ nextBds -- keep the binding
          else do put (vars \\ [name var]); nextBds <- sliceBinds bds toslice; return $ [(var, dummyExp (spanOf e))] ++ nextBds -- dummify the binding
 
 sliceBind :: (Ide, Exp) -> ToSlice -> UsedVars -> Maybe Bool 
@@ -82,8 +82,8 @@ sliceBind (var, e) (BindingS True _) vars = if (name var) `elem` vars
 sliceAssignment :: Ide -> Exp -> Span -> Bool -> ToSlice -> SliceState 
 sliceAssignment var e s set (BindingS False eLbl) = do 
    let def' = if set then Set else Dfv
-   e' <- sliceExp' e eLbl
-   vars <- get; put (vars \\ [name var]); return $ def' var e' s
+   -- e' <- sliceExp' e eLbl
+   vars <- get; put (vars \\ [name var]); return $ def' var e s
 sliceAssignment var e s set (BindingS True _)  = do 
    let def' = if set then Set else Dfv
    vars <- get
