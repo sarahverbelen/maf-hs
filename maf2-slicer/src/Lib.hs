@@ -68,4 +68,4 @@ testLabeling = do
     -- putStrLn $ show $ findNDeps e (Just PInt) (extendStateForExp e mempty)
     putStrLn $ show $ labelSequence e testX
     -- putStrLn $ show $ slice e testX
-    -- putStrLn $ show $ labelIrrelevant e (labelSequence e testX)
+    putStrLn $ show $ labelIrrelevant e (labelSequence e testX)

@@ -61,13 +61,15 @@ shiftLabels' (Skip g)                   = do    g' <- get; put g
                                                 return $ Skip g'
 shiftLabels' (Begin lbls)               = do    lbls' <- mapM shiftLabels' (reverse lbls)
                                                 return $ Begin (reverse lbls')
-shiftLabels' (Binding g lbl)           = do     g' <- get
-                                                lbl' <- shiftLabels' lbl
+shiftLabels' (Binding g lbl)           = do     lbl' <- shiftLabels' lbl
+                                                g'' <- get 
                                                 put g
-                                                return $ Binding g' lbl
+                                                return $ Binding g'' lbl
 shiftLabels' (If g lblC lblA)           = do    g' <- get
-                                                lblA' <- shiftLabels' lblA; put g' 
-                                                lblC' <- shiftLabels' lblC; put g 
+                                                lblC' <- shiftLabels' lblC; gc <- get; put g'
+                                                lblA' <- shiftLabels' lblA; ga <- get;
+                                                let g'' = union g (union ga gc)
+                                                put g''
                                                 return $ If g' lblC' lblA'
 shiftLabels' (Lett g lblBds lblBdy)     = do    g' <- get
                                                 lblBdy' <- shiftLabels' lblBdy 
@@ -136,11 +138,13 @@ labelIf b c a   = do (sto, g) <- get -- improve: update state
                      (_, ga) <- get
                      let gb = map (\x -> (name x, PAll)) $ getVarsFromExp' b -- condition agreement (if agree on gb, same branch taken) (could be more precise)
                      let gIf = union ga $ union gc gb
-                     if (preserve sto g c) && (preserve sto g a) 
-                        then do put (sto, g)
-                                return (Skip g)
-                        else do put (sto, gIf)
-                                return (If gIf lblC lblA)
+                     put (sto, gIf)
+                     return (If gIf lblC lblA)
+                    --  if (preserve sto g c) && (preserve sto g a) 
+                    --     then do put (sto, g)
+                    --             return (Skip g)
+                    --     else do put (sto, gIf)
+                    --             return (If gIf lblC lblA)
 
 -- | G-SKIP
 labelSkip :: LabelState

@@ -68,14 +68,12 @@ preserveBinding g (var, e) = do let findValue nm st = fmap snd $ find (\(a, b) -
                                 put s'
                                 -- if this variable is in the agreement, we need to check if the property is preserved by the assignment     
                                 -- if the variable wasn't defined yet and it is in the agreement, the property is not preserved (ensures we don't remove the first definition of necessary variables!)
-                                let b = (not ((name var) `elem` (map fst g))) || ((v /= top) && ((findValue (name var) s) /= Nothing) && ((getValue v) `elem` (findValue (name var) s)))
+                                let b = (not ((name var) `elem` (map fst g))) || ((v /= top) && ((getValue v) `elem` (findValue (name var) s)))
                                 return b
 
 -- |PP-IF (assumes no side effects in condition)
 preserveIf :: Exp -> Exp -> Exp -> Agreement -> PreserveState
 preserveIf _ c a g = do   s <- get 
-                          let sc = s -- todo: update with info from condition
-                          put sc; bc <- preserve' c g 
-                          let sa = s -- todo: update with info from condition
-                          put sa; ba <- preserve' a g
-                          put s; return $ bc && ba                             
+                          bc <- preserve' c g 
+                          put s; ba <- preserve' a g
+                          put s; return $ bc && ba                         
