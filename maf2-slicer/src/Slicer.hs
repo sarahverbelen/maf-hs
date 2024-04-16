@@ -117,13 +117,7 @@ labelIrrelevant e l = (e', vs) where (e', (_, vs)) = runState (labelIrrelevant' 
 labelIrrelevant' :: Exp -> Labels -> LabelIrrState 
 labelIrrelevant' e l = if isSkip l 
    then return (SkipS True) 
-   else if isVal l 
-      then  do 
-         (s, used) <- get 
-         let used' = map name $ getVarsFromExp' e
-         put (s, union used used')
-         return (SkipS False)
-      else labelIrrExp' e l
+   else labelIrrExp' e l
 
 labelIrrExp' :: Exp -> Labels -> LabelIrrState 
 labelIrrExp' e@(Let bds bdy s) l       = labelIrrLet e bds bdy s Let l
