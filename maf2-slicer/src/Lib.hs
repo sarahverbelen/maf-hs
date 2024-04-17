@@ -55,10 +55,13 @@ testLabeling = do
     -- putStrLn $ show $ findNDeps e (Just PInt) $ extendStateForExp e mempty
     -- putStrLn $ show $ findNDeps e (Just PInt) mempty
     putStrLn $ show e
-    putStrLn $ show $ labelSequence e testX
-    putStrLn $ show $ labelIrrelevant e (labelSequence e testX)
     let e' =  slice e testX
     putStrLn $ show e' 
+    putStrLn $ show $ labelSequence e testX
+    let irrLbls = labelIrrelevant e (labelSequence e testX)
+    putStrLn $ show $ irrLbls
+    let usedVars = findUsedVars e irrLbls (SkipU (getVars testX))
+    putStrLn $ show $ usedVars
     -- printCoverings (extendStateForExp e mempty)
     -- printXCoverings (extendStateForExp e mempty)
     -- putStrLn $ show $ (extendStateForExp e mempty)
