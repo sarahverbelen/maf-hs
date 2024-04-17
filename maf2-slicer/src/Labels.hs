@@ -16,7 +16,7 @@ import Control.Monad.State
 import Data.List (union, delete)
 import qualified Data.Map as Map
 
-data Labels = Lett Agreement [Labels] Labels | If Agreement Labels Labels | Binding Agreement Labels | Skip Agreement | Begin [Labels] deriving (Show, Eq)
+data Labels = Lett Agreement [Labels] Labels | If Agreement Labels Labels | Binding Agreement Labels | Skip Agreement | Begin [Labels]  | Val Agreement deriving (Show, Eq)
 
 -- TODO: fix ifs 
 -- TODO: fix no slicing in recursion in bindings?
@@ -40,6 +40,8 @@ shiftLabels' :: Labels -> State Agreement Labels
 -- and returning the shifted labels and the agreement which was the first one of the sequence
 shiftLabels' (Skip g)                   = do    g' <- get; put g
                                                 return $ Skip g'
+shiftLabels' (Val g)                   = do     g' <- get; put g
+                                                return $ Val g'                                                
 shiftLabels' (Begin lbls)               = do    lbls' <- mapM shiftLabels' (reverse lbls)
                                                 return $ Begin (reverse lbls')
 shiftLabels' (Binding g lbl)           = do     lbl' <- shiftLabels' lbl
@@ -132,6 +134,10 @@ labelSkip :: LabelState
 labelSkip = do (_, g) <- get; return (Skip g)
 
 
+makeVal :: Labels -> Labels 
+makeVal (Skip g) = Val g 
+makeVal l = l
+
 labelBindingExp :: Ide -> Exp -> LabelState 
 -- | labels the expressions bound to a variable
 -- needs to know what variables are necessary for the return value
@@ -142,7 +148,8 @@ labelBindingExp var e = do
                 then findFinalAgreement e g (Just PAll) 
                 else findFinalAgreement e g p
     put (sto, union g g') 
-    labelExp e 
+    r <- labelExp e 
+    return $ makeVal r  
 
 findFinalAgreement :: Exp -> Agreement -> Maybe Property -> Agreement 
 -- | finds the agreement necessary to have the same return value for the expression 

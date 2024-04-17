@@ -20,8 +20,6 @@ slice :: Exp -> Agreement -> Exp
 -- | takes a program and a criterion (= agreement (= list of relevant variables)) and returns the program where only statements affecting the criterion are remaining
 slice p c = sliceExp vars p $ labelSequence p c where vars = getVars c
 
--- type UsedVars = [String] -- TODO: rework so its also nested (follows the structure of the expressions) (is a used variable analysis!)
--- data ToSlice = Lbls [ToSlice] | Lbl Bool deriving (Show, Eq)
 data UsedVars = LetU [String] [UsedVars] UsedVars | IfU [String] UsedVars UsedVars | BindingU [String] UsedVars | SkipU [String] | BeginU [String] [UsedVars] deriving (Eq, Show)
 data ToSlice  = LetS Bool [ToSlice] ToSlice | IfS Bool ToSlice ToSlice | BindingS Bool ToSlice | SkipS Bool | BeginS Bool [ToSlice] deriving (Eq, Show)
 
@@ -104,12 +102,14 @@ sliceAssignment var e s set (BindingS True _) used =
          then def' var (dummyExp (spanOf e)) s
          else Nll s
 
-sliceBegin :: [Exp] -> Span -> ToSlice -> UsedVars -> Exp 
+sliceBegin :: [Exp] -> Span -> ToSlice -> UsedVars -> Exp
 sliceBegin es s (BeginS True _) _ = Nll s
 sliceBegin es s (BeginS False lbls) (BeginU _ varsE) =
    let es' = map (uncurry $ uncurry sliceExp') (zip (zip es lbls) varsE)
        es'' = (filter (\e -> not $ isNll e) (init es')) ++ [last es']
    in Bgn es'' s
+
+
 
 sliceIf :: Exp -> Exp -> Exp -> Span -> ToSlice -> UsedVars -> Exp
 sliceIf b c a s (IfS True _ _) _ = Nll s
@@ -130,7 +130,7 @@ findUsedVars (Dfv var e s)   toslice used = findUsedVarsBinding var e False tosl
 findUsedVars (Set var e s)   toslice used = findUsedVarsBinding var e True toslice used
 findUsedVars (Bgn es s)      toslice used = findUsedVarsBegin es toslice used
 findUsedVars (Iff b c a s)   toslice used = findUsedVarsIf b c a toslice used  
-findUsedVars e _ _                        = SkipU $ map name $ getVarsFromExp' e
+findUsedVars e               _       used = SkipU ((map name $ getVarsFromExp' e) `union` (getUsedVars used))
 
 findUsedVarsLet :: [(Ide, Exp)] -> Exp -> ToSlice -> UsedVars -> UsedVars 
 findUsedVarsLet _ _ (LetS True _ _) used = used 
@@ -160,9 +160,16 @@ findUsedVarsBinding var e isSet (BindingS False toslice) used =
 findUsedVarsBegin :: [Exp] -> ToSlice -> UsedVars -> UsedVars
 findUsedVarsBegin _ (BeginS True _) used = used
 findUsedVarsBegin es (BeginS False lbls) used = 
-   let usedVarsEs = reverse $ map (\(e, lbl) -> findUsedVars e lbl used) (reverse $ zip es lbls)
+   let usedVarsEs = reverse $ findUsedVarsExps (reverse es) (reverse lbls) used
        usedVars = if null usedVarsEs then [] else getUsedVars $ head usedVarsEs
    in BeginU (usedVars `union` (getUsedVars used)) usedVarsEs    
+
+findUsedVarsExps :: [Exp] -> [ToSlice] -> UsedVars -> [UsedVars]
+findUsedVarsExps [] _ _ = []
+findUsedVarsExps (e:es) (lbl:lbls) used = 
+   let usedVars = findUsedVars e lbl used 
+       nextVars = findUsedVarsExps es lbls usedVars
+   in (usedVars:nextVars)
 
 findUsedVarsIf :: Exp -> Exp -> Exp -> ToSlice -> UsedVars -> UsedVars
 findUsedVarsIf _ _ _ (IfS True _ _) used = used
@@ -197,7 +204,8 @@ labelIrrExp' (Bgn es s) (Begin lbls)   = do es' <- mapM (uncurry labelIrrelevant
                                             if null es' 
                                                then return $ BeginS True []
                                                else return $ BeginS False es'
-labelIrrExp' e@(Iff _ _ _ _) l         = labelIrrIf e l                           
+labelIrrExp' e@(Iff _ _ _ _) l         = labelIrrIf e l    
+labelIrrExp' _ (Val _)                 = return $ SkipS False                       
 
 labelIrrLet :: Exp -> [(Ide, Exp)] -> Exp -> Span -> ([(Ide, Exp)] -> Exp -> Span -> Exp) -> Labels -> LabelIrrState
 labelIrrLet e bds bdy s let' (Lett g lbls lbl) = do sto <- get 
