@@ -2,7 +2,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 
-module Labels(labelSequence, Labels(..), isSkip) where 
+module Labels(labelSequence, Labels(..), isSkip, isVal) where 
 
 import Property.Agreement 
 import Property.Preservation
@@ -16,7 +16,7 @@ import Control.Monad.State
 import Data.List (union, delete)
 import qualified Data.Map as Map
 
-data Labels = Lett Agreement [Labels] Labels | If Agreement Labels Labels | Binding Agreement Labels | Skip Agreement | Begin [Labels]  | Val Agreement deriving (Show, Eq)
+data Labels = Lett [Labels] Labels | If Agreement Labels Labels | Binding Agreement Labels | Skip Agreement | Begin [Labels]  | Val Agreement deriving (Show, Eq)
 
 -- TODO: fix ifs 
 -- TODO: fix no slicing in recursion in bindings?
@@ -25,6 +25,10 @@ data Labels = Lett Agreement [Labels] Labels | If Agreement Labels Labels | Bind
 isSkip :: Labels -> Bool 
 isSkip (Skip _) = True 
 isSkip _ = False
+
+isVal :: Labels -> Bool 
+isVal (Val _) = True 
+isVal _ = False
 
 labelSequence :: Exp -> Agreement -> Labels
 -- | label all statements in the sequence with agreements by backwards propagating the G-system rules
@@ -47,18 +51,16 @@ shiftLabels' (Begin lbls)               = do    lbls' <- mapM shiftLabels' (reve
 shiftLabels' (Binding g lbl)           = do     lbl' <- shiftLabels' lbl
                                                 g'' <- get 
                                                 put g
-                                                return $ Binding g'' lbl
-shiftLabels' (If g lblC lblA)           = do    g' <- get
-                                                lblC' <- shiftLabels' lblC; gc <- get; put g'
+                                                return $ Binding g'' lbl'
+shiftLabels' (If gb lblC lblA)           = do   g <- get
+                                                lblC' <- shiftLabels' lblC; gc <- get; put g
                                                 lblA' <- shiftLabels' lblA; ga <- get;
-                                                let g'' = union g (union ga gc)
-                                                put g''
-                                                return $ If g' lblC' lblA'
-shiftLabels' (Lett g lblBds lblBdy)     = do    g' <- get
-                                                lblBdy' <- shiftLabels' lblBdy 
+                                                let g' = (ga `union` gc) `union` gb
+                                                put g'
+                                                return $ If gb lblC' lblA'
+shiftLabels' (Lett lblBds lblBdy)     = do      lblBdy' <- shiftLabels' lblBdy 
                                                 lblBds' <- mapM shiftLabels' (reverse lblBds)
-                                                put g
-                                                return $ Lett g' (reverse lblBds') lblBdy'
+                                                return $ Lett (reverse lblBds') lblBdy'                                                
                                         
 ---------------------------------------------------------------------------------------------------
 --- G-SYSTEM RULES
@@ -95,8 +97,7 @@ labelExp _ = labelSkip
 labelLet :: [(Ide, Exp)] -> Exp -> LabelState
 labelLet bds bdy = do lblBody <- labelExp bdy -- label the body
                       lblBindings <- mapM labelBinding (reverse bds) -- label the bindings in reverse order
-                      (_, g) <- get 
-                      return (Lett g (reverse lblBindings) lblBody)
+                      return (Lett (reverse lblBindings) lblBody)
 
 -- | G-ASSIGN
 labelBinding :: (Ide, Exp) -> LabelState
@@ -122,12 +123,7 @@ labelIf b c a   = do (sto, g) <- get -- improve: update state
                      let gb = map (\x -> (name x, PAll)) $ getVarsFromExp' b -- condition agreement (if agree on gb, same branch taken) (could be more precise)
                      let gIf = union ga $ union gc gb
                      put (sto, gIf)
-                     return (If gIf lblC lblA)
-                    --  if (preserve sto g c) && (preserve sto g a) 
-                    --     then do put (sto, g)
-                    --             return (Skip g)
-                    --     else do put (sto, gIf)
-                    --             return (If gIf lblC lblA)
+                     return (If gb lblC lblA)
 
 -- | G-SKIP
 labelSkip :: LabelState

@@ -1,5 +1,5 @@
-(define x (let ((a 8)
-                (b 7)
+(define a 8)
+(define x (let ((b 7)
                 (c 0))
                 (+ a b)))
 x

@@ -1,5 +1,5 @@
-(let ((x 2)
-      (y 6)
-      (z 7))       
-  (set! x (* x 2))     
-  x)
+(define a 8)
+(define x (let ((b 7)
+                (c 0))
+                (+ a b)))
+x
