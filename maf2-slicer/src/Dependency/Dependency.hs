@@ -41,7 +41,7 @@ atomicExpression e p sto =
 noDep' ::  Property -> Exp -> AbstractSto V -> Bool
 noDep' p e sto = atomicExpression e p sto
 
-noDep ::  Property -> (Ide, Property) -> Exp -> AbstractSto V -> Bool 
+noDep ::  Property -> (String, Property) -> Exp -> AbstractSto V -> Bool 
 -- | holds if there is no dependency of e on x
 noDep p (x, px) e sto = 
     let b = noDep' p e sto
@@ -54,19 +54,18 @@ noDep p (x, px) e sto =
 findNDeps :: Exp -> (Maybe Property) -> AbstractSto V -> Deps 
 findNDeps e (Just p) s = 
     let vars =  map (\a -> (a, PAll)) $ getVarsFromExp' e 
-        vars' = map (\(a, b) -> (name a, b)) vars
         nonDep = prove e s vars p 
-    in vars' \\ nonDep
+    in vars \\ nonDep
 findNDeps _ Nothing _ = error "no property given to find dependencies"
 
-prove :: Exp -> AbstractSto V -> [(Ide, Property)] -> Property -> Deps 
+prove :: Exp -> AbstractSto V -> [(String, Property)] -> Property -> Deps 
 prove e s xs p = evalState (prove' e s xs p) []
 
-prove' :: Exp -> AbstractSto V -> [(Ide, Property)] -> Property -> State Deps Deps 
+prove' :: Exp -> AbstractSto V -> [(String, Property)] -> Property -> State Deps Deps 
 prove' e s xs p = 
     if and $ map (\x -> (noDep p x e s)) xs
         then do nonDep <- get 
-                let nonDep' = union nonDep $ map (\(a, b) -> (name a, b)) xs
+                let nonDep' = union nonDep xs
                 put nonDep'
                 return nonDep' 
         else do mapM_ (\xs' -> prove' e s xs' p) [xs \\ [x] | x <- xs]

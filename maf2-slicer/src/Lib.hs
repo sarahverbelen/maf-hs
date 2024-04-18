@@ -44,7 +44,7 @@ printCoverings s = do
 
 printXCoverings :: AbstractSto V -> IO ()
 printXCoverings s = do 
-    let ss = xCoveringByProp testIde PInt s 
+    let ss = xCoveringByProp "x" PInt s 
     putStrLn $ show ss
     mapM_ printCoverings ss     
 

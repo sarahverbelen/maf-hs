@@ -63,7 +63,7 @@ preserveBinding :: Agreement -> (Ide, Exp) -> PreserveState
 preserveBinding g (var, e) = do s <- get
                                 let v = abstractEvalForCovering e s
                                 -- update the value in our abstract state
-                                let s' = Map.insert var (getValue v) s
+                                let s' = Map.insert (name var) (getValue v) s
                                 put s'
                                 -- if this variable is in the agreement, we need to check if the property is preserved by the assignment     
                                 -- if the variable wasn't defined yet and it is in the agreement, the property is not preserved (ensures we don't remove the first definition of necessary variables!)
@@ -72,8 +72,10 @@ preserveBinding g (var, e) = do s <- get
 
 sameValueAsBefore :: Exp -> Ide -> Value -> AbstractSto V -> Bool 
 sameValueAsBefore e var val sto = 
-    let b = (getValue val) `elem` (Map.lookup (Ide (name var) NoSpan) sto)
-    in (val /= bottom) && (val /= top) && b
+    let findValue nm st = fmap snd $ find (\(a, b) -> a == nm) $ Map.toList st
+        b = (getValue val) `elem` (findValue (name var) sto)
+    -- in if null (getVarsFromExp' e) then (val /= bottom) && (val /= top) && b else error $ (show sto) ++ (show val) ++ (show $ findValue (name var) sto)
+   in (val /= bottom) && (val /= top) && b
 
 -- |PP-IF (assumes no side effects in condition)
 preserveIf :: Exp -> Exp -> Exp -> Agreement -> PreserveState

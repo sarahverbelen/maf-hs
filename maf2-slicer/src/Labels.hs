@@ -116,7 +116,7 @@ labelIf b c a   = do (sto, g) <- get -- improve: update state
                      put (sto, g) -- improve: update state
                      lblA <- labelExp a
                      (_, ga) <- get
-                     let gb = map (\x -> (name x, PAll)) $ getVarsFromExp' b -- condition agreement (if agree on gb, same branch taken) (could be more precise)
+                     let gb = map (\x -> (x, PAll)) $ getVarsFromExp' b -- condition agreement (if agree on gb, same branch taken) (could be more precise)
                      let gIf = union ga $ union gc gb
                      put (sto, gIf)
                      return (If gb lblC lblA)

@@ -129,7 +129,7 @@ findUsedVars (Dfv var e s)   toslice used = findUsedVarsBinding var e False tosl
 findUsedVars (Set var e s)   toslice used = findUsedVarsBinding var e True toslice used
 findUsedVars (Bgn es s)      toslice used = findUsedVarsBegin es toslice used
 findUsedVars (Iff b c a s)   toslice used = findUsedVarsIf b c a toslice used  
-findUsedVars e               _       used = SkipU ((map name $ getVarsFromExp' e) `union` (getUsedVars used))
+findUsedVars e               _       used = SkipU ((getVarsFromExp' e) `union` (getUsedVars used))
 
 findUsedVarsLet :: [(Ide, Exp)] -> Exp -> ToSlice -> UsedVars -> UsedVars 
 findUsedVarsLet _ _ (LetS True _ _) used = used 
@@ -173,7 +173,7 @@ findUsedVarsExps (e:es) (lbl:lbls) used =
 findUsedVarsIf :: Exp -> Exp -> Exp -> ToSlice -> UsedVars -> UsedVars
 findUsedVarsIf _ _ _ (IfS True _ _) used = used
 findUsedVarsIf b c a (IfS False lblC lblA) used = 
-   let   usedB = map name $ getVarsFromExp' b
+   let   usedB = getVarsFromExp' b
          usedC = findUsedVars c lblC used 
          usedA = findUsedVars a lblA used 
          usedIf = usedB `union` (getUsedVars usedC) `union` (getUsedVars usedA)
@@ -209,8 +209,9 @@ labelIrrExp' e@(Iff _ _ _ _) l         = labelIrrIf e l
 labelIrrExp' _ (Val _)                 = return $ SkipS False                       
 
 labelIrrLet :: Exp -> [(Ide, Exp)] -> Exp -> Span -> ([(Ide, Exp)] -> Exp -> Span -> Exp) -> Labels -> LabelIrrState
-labelIrrLet e bds bdy s let' (Lett lbls lbl)   = do sto <- get 
-                                                    bds' <- mapM labelIrrBinding (zip bds lbls)
+labelIrrLet e bds bdy s let' (Lett lbls lbl)   = do bds' <- mapM labelIrrBinding (zip bds lbls)
+                                                    sto <- get 
+                                                   --  error $ (show sto) ++ (show bds')
                                                     bdy' <- labelIrrelevant' bdy lbl 
                                                     return $ LetS False bds' bdy'
 
@@ -220,9 +221,10 @@ labelIrrBinding ((var, exp), (Binding g lbl)) =
       let eLbl' = relabelIrrBindingExp eLbl
       s <- get
       let (b, s') = preserveWithSto s g (Dfv var exp NoSpan) 
+      put s'
       if b 
-         then do put s'; return $ BindingS True eLbl'  
-         else do put s'; return $ BindingS False eLbl'  
+         then do return $ BindingS True eLbl'  
+         else do return $ BindingS False eLbl'  
 
 relabelIrrBindingExp :: ToSlice -> ToSlice 
 -- relabels the expression bound to a variable so that the return value is kept 

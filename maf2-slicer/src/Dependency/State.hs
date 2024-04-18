@@ -26,13 +26,13 @@ import Data.Functor.Identity
 import Data.Function ((&))
 
 
-type AbstractSto v = Map.Map Ide v
+type AbstractSto v = Map.Map String v
 
 covering :: AbstractSto V -> [AbstractSto V]
 -- | a covering of a state s is a set of refinements of that state such that all possible values are accounted for
 covering s = fmap Map.fromList (filter (not . null) $ sequence $ groupBy (\ a b -> fst a == fst b) [(k, v') | (k, v) <- Map.toList s, v' <- refine v])
 
-xCovering :: [Ide] -> AbstractSto V -> [AbstractSto V]
+xCovering :: [String] -> AbstractSto V -> [AbstractSto V]
 -- | values of variables outside some set X take values that are the same as either the corresponding values in s or their direct subvalues
 xCovering x s = fmap Map.fromList (filter (not . null) $ sequence $ groupBy (\ a b -> fst a == fst b) ([(k, v') | (k, v) <- notInX, v' <- refine v] ++ inX))
                 where (inX, notInX) = partition (\a -> elem (fst a) x) (Map.toList s)
@@ -43,12 +43,12 @@ refineByProp PReal v = [v { real = r }    | r <- refine $ real v]
 refineByProp PInt v  = [v { integer = i } | i <- refine $ integer v]
 refineByProp PBool v = [v { boolean = b } | b <- refine $ boolean v]
 
-xCoveringByProp :: Ide -> Property -> AbstractSto V -> [AbstractSto V]
+xCoveringByProp :: String -> Property -> AbstractSto V -> [AbstractSto V]
 xCoveringByProp x PAll s = xCovering [x] s  
 xCoveringByProp x p s = fmap Map.fromList (sequence $ groupBy (\ a b -> fst a == fst b) ([(k, v') | (k, v) <- notInX, v' <- refineByProp p v] ++ inX))
-                where (inX, notInX) = partition (\a -> name (fst a) == name x) (Map.toList s) 
+                where (inX, notInX) = partition (\(a, _) -> a == x) (Map.toList s) 
 
-extendState :: [Ide] -> AbstractSto V -> AbstractSto V 
+extendState :: [String] -> AbstractSto V -> AbstractSto V 
 -- | adds a list of variables to an abstract store and sets all their values to top (if they weren't in the store yet)
 extendState vars sto = foldr (\var sto' -> Map.insertWith (flip const) var top sto') sto vars
 
@@ -69,17 +69,26 @@ abstractEvalForCovering :: Exp -> AbstractSto V -> Value
 --   compute the X-covering (X = all variables in the store before we extended it) of this abstract store
 --   run the abstract interpreter for the expression using these stores as initial states
 --   join the resulting values together to get the final value
-abstractEvalForCovering e sto = foldr join bottom (map (abstractEval e) (generateStates e sto))
+abstractEvalForCovering e sto = 
+       -- if null (getVarsFromExp' e) then foldr join bottom (map (abstractEval e) (generateStates e sto)) else error $ (show (extendState (getVarsFromExp' e) sto)) ++ show (map (abstractEval e) (generateStates e sto))
+       foldr join bottom (map (abstractEval e) (generateStates e sto))
 
-abstractStoToEnv :: AbstractSto V -> Map.Map String Ide -- temporary: need to keep track of environment as well as store
-abstractStoToEnv s = Map.union (Map.fromList $ map (\(ide, v) -> (name ide, ide)) (Map.toList s)) (initialEnv prmAdr)
+abstractStateToEnv :: Map.Map Ide V -> Map.Map String Ide -- temporary: need to keep track of environment as well as store
+abstractStateToEnv s = Map.union (Map.fromList $ map (\(ide, v) -> (name ide, ide)) (Map.toList s)) (initialEnv prmAdr)
+
+abstractStoToState :: AbstractSto V -> Map.Map Ide V 
+abstractStoToState s = Map.mapKeys (\k -> Ide k NoSpan) s
+
+abstractStateToSto :: Map.Map Ide V -> AbstractSto V 
+abstractStateToSto s = Map.mapKeys name s
 
 abstractEval' :: Exp -> AbstractSto V -> (Value, AbstractSto V)
 -- | version of abstractEval that also returns the updated store
-abstractEval' e s = (v, values sto') where (v, sto') = analyze'' (e, env, (), Ghost) $ sto
-                                           s' = extendStateForExp e s
-                                           env = abstractStoToEnv s'
-                                           sto = fromValues $ Map.union s (initialSto env)
+abstractEval' e s = (v, abstractStateToSto $ values sto') 
+       where  (v, sto') = analyze'' (e, env, (), Ghost) $ sto
+              s' = abstractStoToState $ extendStateForExp e s
+              env = abstractStateToEnv s'
+              sto = fromValues $ Map.union (abstractStoToState s) (initialSto env)
 
 abstractEval :: Exp -> AbstractSto V -> Value
 -- | finds the abstract value of the expression in the given abstract state
@@ -151,9 +160,9 @@ analyze'' (exp, env, ctx, _) store =
 
 -- auxiliary function that extracts the variables used in an expression
 
-getVarsFromExp' :: Exp -> [Ide]
+getVarsFromExp' :: Exp -> [String]
 -- version where the variables are unique by name
-getVarsFromExp' = (nubBy (\a b -> name a == name b)) . getVarsFromExp
+getVarsFromExp' e = map name $ (nubBy (\a b -> name a == name b)) $ getVarsFromExp e
 
 getVarsFromExp :: Exp -> [Ide]
 getVarsFromExp (Var x)             = [x]
