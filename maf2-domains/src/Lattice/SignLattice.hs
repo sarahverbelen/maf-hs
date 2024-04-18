@@ -15,6 +15,8 @@ data Sign = SBottom
 instance Joinable Sign where 
     join SBottom v = v 
     join v SBottom = v 
+    join STop _ = STop 
+    join _ STop = STop
     join ZeroOrNeg ZeroOrPos = STop
     join ZeroOrPos ZeroOrNeg = STop
     join ZeroOrPos _ = ZeroOrPos 

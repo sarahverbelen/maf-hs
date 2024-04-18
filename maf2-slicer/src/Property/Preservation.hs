@@ -60,16 +60,20 @@ preserveLet binds bdy g = do  bs <- mapM (preserveBinding g) binds
 
 -- | PP-ASSIGN              
 preserveBinding :: Agreement -> (Ide, Exp) -> PreserveState             
-preserveBinding g (var, e) = do let findValue nm st = fmap snd $ find (\(a, b) -> name a == nm) $ Map.toList st 
-                                s <- get
+preserveBinding g (var, e) = do s <- get
                                 let v = abstractEvalForCovering e s
                                 -- update the value in our abstract state
                                 let s' = Map.insert var (getValue v) s
                                 put s'
                                 -- if this variable is in the agreement, we need to check if the property is preserved by the assignment     
                                 -- if the variable wasn't defined yet and it is in the agreement, the property is not preserved (ensures we don't remove the first definition of necessary variables!)
-                                let b = (not ((name var) `elem` (map fst g))) || ((v /= top) && ((getValue v) `elem` (findValue (name var) s)))
+                                let b = (not ((name var) `elem` (map fst g))) || sameValueAsBefore e var v s
                                 return b
+
+sameValueAsBefore :: Exp -> Ide -> Value -> AbstractSto V -> Bool 
+sameValueAsBefore e var val sto = 
+    let b = (getValue val) `elem` (Map.lookup (Ide (name var) NoSpan) sto)
+    in (val /= bottom) && (val /= top) && b
 
 -- |PP-IF (assumes no side effects in condition)
 preserveIf :: Exp -> Exp -> Exp -> Agreement -> PreserveState

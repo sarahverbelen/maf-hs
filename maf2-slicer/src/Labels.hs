@@ -18,10 +18,6 @@ import qualified Data.Map as Map
 
 data Labels = Lett [Labels] Labels | If Agreement Labels Labels | Binding Agreement Labels | Skip Agreement | Begin [Labels]  | Val Agreement deriving (Show, Eq)
 
--- TODO: fix ifs 
--- TODO: fix no slicing in recursion in bindings?
--- TODO: write tests
-
 isSkip :: Labels -> Bool 
 isSkip (Skip _) = True 
 isSkip _ = False

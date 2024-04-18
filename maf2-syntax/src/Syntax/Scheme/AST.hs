@@ -22,7 +22,7 @@ data Ide = Ide { name :: String, span :: Span } deriving (Ord, Eq, Generic)
 instance Hashable Ide
 
 instance Show Ide where
-   show (Ide { name }) = name
+--    show (Ide { name }) = name
 
 data Exp = Num Integer Span          -- ^ number literals
          | Rea Double  Span          -- ^ real number literals
