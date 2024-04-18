@@ -114,8 +114,8 @@ sliceIf :: Exp -> Exp -> Exp -> Span -> ToSlice -> UsedVars -> Exp
 sliceIf b c a s (IfS True _ _) _ = Nll s
 sliceIf b c a s (IfS False lblC lblA) (IfU _ varsC varsA) =
    let c' = sliceExp' c lblC varsC
-       a' = sliceExp' a lblA varsA
-   in Iff b c' a' s
+       a' = sliceExp' a lblA varsA    
+   in if (isNll c' && isNll a') then Nll s else Iff b c' a' s
 
 -- | USED VARIABLE ANALYSIS PASS (back to front, single-pass live variable analysis)
 -- to find out what variables need to keep their initial defines

@@ -52,24 +52,12 @@ testLabeling :: IO ()
 testLabeling = do 
     contents <- readFile testProgram 
     let e = fromJust $ parseString contents
-    -- putStrLn $ show $ findNDeps e (Just PInt) $ extendStateForExp e mempty
-    -- putStrLn $ show $ findNDeps e (Just PInt) mempty
     putStrLn $ show e
     let e' =  slice e testX
     putStrLn $ show e' 
-    putStrLn $ show $ labelSequence e testX
-    let irrLbls = labelIrrelevant e (labelSequence e testX)
-    putStrLn $ show $ irrLbls
-    let usedVars = findUsedVars e irrLbls (SkipU (getVars testX))
-    putStrLn $ show $ usedVars
-    -- printCoverings (extendStateForExp e mempty)
-    -- printXCoverings (extendStateForExp e mempty)
-    -- putStrLn $ show $ (extendStateForExp e mempty)
-    -- putStrLn $ show $ abstractEval e mempty 
-    -- putStrLn $ show $ preserveWithSto mempty testX e
-    -- putStrLn $ show $ xCoveringByProp testIde PInt (extendStateForExp e mempty)
-    -- putStrLn $ show $ noDep PInt (testIde, PInt) e (extendStateForExp e mempty)
-    -- putStrLn $ show $ atomicExpression e PInt (extendStateForExp e mempty)
-    -- putStrLn $ show $ findNDeps e (Just PInt) (extendStateForExp e mempty)
-    -- putStrLn $ show $ slice e testX
+    -- putStrLn $ show $ labelSequence e testX
+    -- let irrLbls = labelIrrelevant e (labelSequence e testX)
+    -- putStrLn $ show $ irrLbls
+    -- let usedVars = findUsedVars e irrLbls (SkipU (getVars testX))
+    -- putStrLn $ show $ usedVars
     
