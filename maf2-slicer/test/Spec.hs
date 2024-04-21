@@ -14,18 +14,26 @@ import Data.Maybe
 genVarName :: Gen String 
 genVarName = oneof $ map return ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"]
 
-genPrimitive :: Gen Exp  
-genPrimitive = do
-  primName <- oneof $ map return $ Map.keys primitivesByName
-  return $ Var (Ide primName NoSpan)
+numPrimitives :: [(String, Int)]
+-- a list of primitives that return numbers + the amount of parameters they require
+numPrimitives = [("+", 2), ("-", 2), ("*", 2), ("/", 2)]
+
+boolPrimitives :: [(String, Int)]
+-- a list of primitives that return booleans + the amount of parameters they require  
+boolPrimitives = [("<", 2), ("=", 2)]
+
+genPrimitive :: [(String, Int)] -> Gen (Exp, Int)  
+genPrimitive primList = do
+  (primName, args) <- oneof $ map return primList
+  return (Var (Ide primName NoSpan), args)
 
 genBoolExp :: Gen Exp 
 -- | generates expressions that return booleans
 genBoolExp = do 
   oneof [
-    do ide <- arbitrary; return $ Var ide, 
-    do b <- arbitrary; return $ Bln b NoSpan
-    -- TODO: function applications that return bools
+    --do ide <- arbitrary; return $ Var ide
+    do b <- arbitrary; return $ Bln b NoSpan,
+    do (prim, args) <- genPrimitive boolPrimitives; ops <- vectorOf args genValExp; return $ App prim ops NoSpan
     ]
 
 genStatementExp :: Gen Exp 
@@ -52,10 +60,10 @@ genValExp = oneof [
       -- if 
       , do b <- genBoolExp; c <- genValExp; a <- genValExp; return $ Iff b c a NoSpan
       -- let
-      , genLetExp
+     -- , genLetExp
       -- function application 
-      , do prim <- genPrimitive; a <- genValExp; b <- genValExp; return $ App prim [a, b] NoSpan -- TODO: correct amount of arguments + correct types of arguments
-      ] 
+      , do (prim, args) <- genPrimitive numPrimitives; ops <- vectorOf args genValExp; return $ App prim ops NoSpan -- TODO: correct amount of arguments + correct types of arguments
+      ]       
 
 genLetExp :: Gen Exp 
 -- | generates lets
@@ -72,7 +80,9 @@ instance Arbitrary Ide where
     return $ Ide name NoSpan
 
 instance Arbitrary Exp where 
-  arbitrary = genLetExp
+  arbitrary =
+    genStatementExp 
+    --genLetExp
     --oneof [genStatementExp, genValExp, genBoolExp]
     
 
