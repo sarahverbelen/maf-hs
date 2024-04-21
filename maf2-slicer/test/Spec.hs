@@ -27,56 +27,82 @@ genPrimitive primList = do
   (primName, args) <- oneof $ map return primList
   return (Var (Ide primName NoSpan), args)
 
-genBoolExp :: Gen Exp 
+type Context = [Ide] -- the context contains all variables that are defined in the current environment
+
+genBoolExp :: Context -> Int -> Gen Exp 
 -- | generates expressions that return booleans
-genBoolExp = do 
+genBoolExp _ 0  = do b <- arbitrary; return $ Bln b NoSpan
+genBoolExp [] _ = do b <- arbitrary; return $ Bln b NoSpan
+genBoolExp vs n = do 
   oneof [
     do b <- arbitrary; return $ Bln b NoSpan,
-    do (prim, args) <- genPrimitive boolPrimitives; ops <- vectorOf args (sized genValExp); return $ App prim ops NoSpan
+    do (prim, args) <- genPrimitive boolPrimitives; ops <- vectorOf args (genValExp vs (quot n 2)); return $ App prim ops NoSpan
     ]
 
-genStatementExp :: Int -> Gen Exp 
+genStatementExp :: Context -> Int -> Gen (Exp, Context)
 -- | generates expressions that don't necessarily have return values (aka cant be used as a right hand side of an assignment)
-genStatementExp n = frequency [ 
+genStatementExp [] _ = do e <- genValExp [] 0; return (e, [])
+genStatementExp vs n = frequency [ 
   -- define
-  (1, do ide <- arbitrary; e <- genValExp (quot n 2); return $ Dfv ide e NoSpan),
+  (1, do ide <- elements vs; e <- genValExp vs (quot n 2); return (Dfv ide e NoSpan, vs ++ [ide])),
   -- set 
-  (2, do ide <- arbitrary; e <- genValExp (quot n 2); return $ Set ide e NoSpan)
+  (2, do ide <- elements vs; e <- genValExp vs (quot n 2); return (Set ide e NoSpan, vs))
   ]
 
-genSimpleExp :: Gen Exp 
-genSimpleExp = oneof [
-      do randNr <- choose (-30, 30); return $ Num randNr NoSpan
+genSimpleExp :: Context -> Gen Exp 
+genSimpleExp [] = do randNr <- choose (-30, 30); return $ Num randNr NoSpan
+genSimpleExp vs = frequency [
+      (3, do randNr <- choose (-30, 30); return $ Num randNr NoSpan),
       -- , do randNr <- choose (-30, 30); return $ Rea randNr NoSpan
-      , do ide <- arbitrary; return $ Var ide
+      (2, do ide <- elements vs; return $ Var ide),
+      (2, do (prim, args) <- genPrimitive numPrimitives; ops <- vectorOf args (genSimpleExp vs); return $ App prim ops NoSpan)
       ] 
 
--- todo: scope of variables!
-genValExp :: Int -> Gen Exp 
+genValExp :: Context -> Int -> Gen Exp 
 -- | generates expressions that return a numeric value 
-genValExp 0 = genSimpleExp   
-genValExp n = frequency [
+genValExp vs 0 = genSimpleExp vs
+genValExp vs n = frequency [
       -- simple expressions
-      (6, genSimpleExp),
+      (6, genSimpleExp vs),
       -- begin
-      (1, do es <- scale (\n -> quot n 2) $ listOf (oneof [genStatementExp (quot n 2), genValExp (quot n 2)]); lastE <- genValExp (quot n 2); return $ Bgn (es ++ [lastE]) NoSpan),
+      (2, genBeginExp vs (quot n 2)),
+      --(1, do es <- scale (\n -> quot n 2) $ listOf (oneof [genStatementExp vs (quot n 2), genValExp vs (quot n 2)]); lastE <- genValExp vs (quot n 2); return $ Bgn (es ++ [lastE]) NoSpan),
       -- if 
-      (2, do b <- genBoolExp; c <- genValExp (quot n 2) ; a <- genValExp (quot n 2); return $ Iff b c a NoSpan),
+      (2, do b <- genBoolExp vs (quot n 2); c <- genValExp vs (quot n 2) ; a <- genValExp vs (quot n 2); return $ Iff b c a NoSpan),
       -- let
-      (1, genLetExp (quot n 2)),
+      (1, genLetExp vs (quot n 2)),
       -- function application 
-      (2, do (prim, args) <- genPrimitive numPrimitives; ops <- vectorOf args (genValExp (quot n 2)); return $ App prim ops NoSpan)
+      (3, do (prim, args) <- genPrimitive numPrimitives; ops <- vectorOf args (genValExp vs (quot n 2)); return $ App prim ops NoSpan)
       ]       
 
-genLetExp :: Int -> Gen Exp 
+genBeginExp :: Context -> Int -> Gen Exp 
+genBeginExp vs 0 = genSimpleExp vs
+genBeginExp vs n = do k <- choose (1, n)
+                      exps <- genBeginExp' vs k
+                      return $ Bgn exps NoSpan
+
+genBeginExp' :: Context -> Int -> Gen [Exp]
+genBeginExp' vs 0 = do e <- genSimpleExp vs; return [e]
+genBeginExp' vs n = do 
+  (statement, vs') <- genStatementExp vs n
+  includeStatement <- frequency [(2, return False), (1, return True)]
+  e <- genValExp vs (quot n 2)
+  let nextVs = if includeStatement then vs' else vs 
+  nextExps <- genBeginExp' nextVs (quot n 2)
+  let currExp = if includeStatement then statement else e
+  return $ (currExp : nextExps)
+
+
+genLetExp :: Context -> Int -> Gen Exp 
 -- | generates lets
-genLetExp 0 = genSimpleExp
-genLetExp n = do 
+genLetExp vs 0 = genSimpleExp vs
+genLetExp vs n = do 
   ides <- scale (\n -> quot n 2) $ listOf arbitrary; 
-  e <- scale (\n -> quot n 2) $ listOf (genValExp (quot n 2)); 
+  e <- scale (\n -> quot n 2) $ listOf (genValExp vs (quot n 2)); 
   let binds = zip ides e
-  body <- genValExp (quot n 2); 
-  let' <- oneof $ map return [Let, Ltt, Ltr, Lrr]
+  let newVs = vs ++ (map fst binds)
+  body <- genValExp newVs (quot n 2); 
+  let' <- oneof $ map return [Let, Ltt, Ltr, Lrr] -- todo: let recursive lets make use of their recursive-ness
   return $ let' binds body NoSpan 
 
 instance Arbitrary Ide where 
@@ -86,7 +112,7 @@ instance Arbitrary Ide where
 
 instance Arbitrary Exp where 
   arbitrary =
-    resize 10 $ sized genLetExp
+    resize 10 $ sized (genLetExp [])
 
 -- properties
 
