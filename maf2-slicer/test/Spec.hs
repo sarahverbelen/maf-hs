@@ -36,13 +36,13 @@ genBoolExp = do
     ]
 
 -- todo: use this somewhere
-genStatementExp :: Gen Exp 
+genStatementExp :: Int -> Gen Exp 
 -- | generates expressions that don't necessarily have return values (aka cant be used as a right hand side of an assignment)
-genStatementExp = oneof [ 
+genStatementExp n = oneof [ 
   -- define
-  do ide <- arbitrary; e <- genValExp; return $ Dfv ide e NoSpan,
+  do ide <- arbitrary; e <- genValExp (quot n 2); return $ Dfv ide e NoSpan,
   -- set 
-  do ide <- arbitrary; e <- genValExp; return $ Set ide e NoSpan
+  do ide <- arbitrary; e <- genValExp (quot n 2); return $ Set ide e NoSpan
   ]
 
 -- todo: scope of variables!
@@ -60,7 +60,7 @@ genValExp n = oneof [
       --, do randNr <- choose (-30, 30); return $ Rea randNr NoSpan
       , do ide <- arbitrary; return $ Var ide
       -- begin
-      , do es <- scale (\n -> quot n 2) $ listOf1 (genValExp (quot n 2)); return $ Bgn es NoSpan
+      , do es <- scale (\n -> quot n 2) $ listOf (oneof [genStatementExp (quot n 2), genValExp (quot n 2)]); lastE <- genValExp (quot n 2); return $ Bgn (es ++ [lastE]) NoSpan
       -- if 
       , do b <- genBoolExp; c <- genValExp (quot n 2) ; a <- genValExp (quot n 2); return $ Iff b c a NoSpan
       -- let
