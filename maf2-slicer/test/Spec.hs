@@ -31,48 +31,54 @@ genBoolExp :: Gen Exp
 -- | generates expressions that return booleans
 genBoolExp = do 
   oneof [
-    --do ide <- arbitrary; return $ Var ide
     do b <- arbitrary; return $ Bln b NoSpan,
-    do (prim, args) <- genPrimitive boolPrimitives; ops <- vectorOf args genValExp; return $ App prim ops NoSpan
+    do (prim, args) <- genPrimitive boolPrimitives; ops <- vectorOf args (sized genValExp); return $ App prim ops NoSpan
     ]
 
+-- todo: use this somewhere
 genStatementExp :: Gen Exp 
 -- | generates expressions that don't necessarily have return values (aka cant be used as a right hand side of an assignment)
 genStatementExp = oneof [ 
   -- define
   do ide <- arbitrary; e <- genValExp; return $ Dfv ide e NoSpan,
   -- set 
-  do ide <- arbitrary; e <- genValExp; return $ Set ide e NoSpan,
-  -- begin
-  do exp <- oneof [genValExp, genStatementExp]; return $ Bgn [exp] NoSpan -- TODO: longer lists of exps (but not too long) 
+  do ide <- arbitrary; e <- genValExp; return $ Set ide e NoSpan
   ]
 
-
-genValExp :: Gen Exp 
--- | generates expressions that return a value 
-genValExp = oneof [
+-- todo: scope of variables!
+genValExp :: Int -> Gen Exp 
+-- | generates expressions that return a numeric value 
+genValExp 0 = oneof [
       -- simple expressions
       do randNr <- choose (-30, 30); return $ Num randNr NoSpan
-      , do randNr <- choose (-30, 30); return $ Rea randNr NoSpan
+      -- , do randNr <- choose (-30, 30); return $ Rea randNr NoSpan
+      , do ide <- arbitrary; return $ Var ide
+      ]   
+genValExp n = oneof [
+      -- simple expressions
+      do randNr <- choose (-30, 30); return $ Num randNr NoSpan
+      --, do randNr <- choose (-30, 30); return $ Rea randNr NoSpan
       , do ide <- arbitrary; return $ Var ide
       -- begin
-      , do exp <- genValExp; return $ Bgn [exp] NoSpan -- TODO: longer lists of exps (but not too long)
+      , do es <- scale (\n -> quot n 2) $ listOf1 (genValExp (quot n 2)); return $ Bgn es NoSpan
       -- if 
-      , do b <- genBoolExp; c <- genValExp; a <- genValExp; return $ Iff b c a NoSpan
+      , do b <- genBoolExp; c <- genValExp (quot n 2) ; a <- genValExp (quot n 2); return $ Iff b c a NoSpan
       -- let
-     -- , genLetExp
+      , genLetExp (quot n 2)
       -- function application 
-      , do (prim, args) <- genPrimitive numPrimitives; ops <- vectorOf args genValExp; return $ App prim ops NoSpan -- TODO: correct amount of arguments + correct types of arguments
+      , do (prim, args) <- genPrimitive numPrimitives; ops <- vectorOf args (genValExp (quot n 2)); return $ App prim ops NoSpan
       ]       
 
-genLetExp :: Gen Exp 
+genLetExp :: Int -> Gen Exp 
 -- | generates lets
-genLetExp = do 
-  ide <- arbitrary; 
-  e <- genValExp; 
-  body <- genValExp; 
+genLetExp 0 = genValExp 0
+genLetExp n = do 
+  ides <- scale (\n -> quot n 2) $ listOf arbitrary; 
+  e <- scale (\n -> quot n 2) $ listOf (genValExp (quot n 2)); 
+  let binds = zip ides e
+  body <- genValExp (quot n 2); 
   let' <- oneof $ map return [Let, Ltt, Ltr, Lrr]
-  return $ let' [(ide, e)] body NoSpan 
+  return $ let' binds body NoSpan 
 
 instance Arbitrary Ide where 
   arbitrary = do
@@ -81,10 +87,7 @@ instance Arbitrary Ide where
 
 instance Arbitrary Exp where 
   arbitrary =
-    genStatementExp 
-    --genLetExp
-    --oneof [genStatementExp, genValExp, genBoolExp]
-    
+    resize 10 $ sized genLetExp
 
 -- properties
 
