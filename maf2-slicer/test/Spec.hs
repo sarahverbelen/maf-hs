@@ -35,43 +35,42 @@ genBoolExp = do
     do (prim, args) <- genPrimitive boolPrimitives; ops <- vectorOf args (sized genValExp); return $ App prim ops NoSpan
     ]
 
--- todo: use this somewhere
 genStatementExp :: Int -> Gen Exp 
 -- | generates expressions that don't necessarily have return values (aka cant be used as a right hand side of an assignment)
-genStatementExp n = oneof [ 
+genStatementExp n = frequency [ 
   -- define
-  do ide <- arbitrary; e <- genValExp (quot n 2); return $ Dfv ide e NoSpan,
+  (1, do ide <- arbitrary; e <- genValExp (quot n 2); return $ Dfv ide e NoSpan),
   -- set 
-  do ide <- arbitrary; e <- genValExp (quot n 2); return $ Set ide e NoSpan
+  (2, do ide <- arbitrary; e <- genValExp (quot n 2); return $ Set ide e NoSpan)
   ]
+
+genSimpleExp :: Gen Exp 
+genSimpleExp = oneof [
+      do randNr <- choose (-30, 30); return $ Num randNr NoSpan
+      -- , do randNr <- choose (-30, 30); return $ Rea randNr NoSpan
+      , do ide <- arbitrary; return $ Var ide
+      ] 
 
 -- todo: scope of variables!
 genValExp :: Int -> Gen Exp 
 -- | generates expressions that return a numeric value 
-genValExp 0 = oneof [
+genValExp 0 = genSimpleExp   
+genValExp n = frequency [
       -- simple expressions
-      do randNr <- choose (-30, 30); return $ Num randNr NoSpan
-      -- , do randNr <- choose (-30, 30); return $ Rea randNr NoSpan
-      , do ide <- arbitrary; return $ Var ide
-      ]   
-genValExp n = oneof [
-      -- simple expressions
-      do randNr <- choose (-30, 30); return $ Num randNr NoSpan
-      --, do randNr <- choose (-30, 30); return $ Rea randNr NoSpan
-      , do ide <- arbitrary; return $ Var ide
+      (6, genSimpleExp),
       -- begin
-      , do es <- scale (\n -> quot n 2) $ listOf (oneof [genStatementExp (quot n 2), genValExp (quot n 2)]); lastE <- genValExp (quot n 2); return $ Bgn (es ++ [lastE]) NoSpan
+      (1, do es <- scale (\n -> quot n 2) $ listOf (oneof [genStatementExp (quot n 2), genValExp (quot n 2)]); lastE <- genValExp (quot n 2); return $ Bgn (es ++ [lastE]) NoSpan),
       -- if 
-      , do b <- genBoolExp; c <- genValExp (quot n 2) ; a <- genValExp (quot n 2); return $ Iff b c a NoSpan
+      (2, do b <- genBoolExp; c <- genValExp (quot n 2) ; a <- genValExp (quot n 2); return $ Iff b c a NoSpan),
       -- let
-      , genLetExp (quot n 2)
+      (1, genLetExp (quot n 2)),
       -- function application 
-      , do (prim, args) <- genPrimitive numPrimitives; ops <- vectorOf args (genValExp (quot n 2)); return $ App prim ops NoSpan
+      (2, do (prim, args) <- genPrimitive numPrimitives; ops <- vectorOf args (genValExp (quot n 2)); return $ App prim ops NoSpan)
       ]       
 
 genLetExp :: Int -> Gen Exp 
 -- | generates lets
-genLetExp 0 = genValExp 0
+genLetExp 0 = genSimpleExp
 genLetExp n = do 
   ides <- scale (\n -> quot n 2) $ listOf arbitrary; 
   e <- scale (\n -> quot n 2) $ listOf (genValExp (quot n 2)); 
