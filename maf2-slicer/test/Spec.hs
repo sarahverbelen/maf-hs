@@ -23,13 +23,10 @@ genVarName = oneof $ map return varNames
 genFreshVarName :: [String] -> Gen String 
 genFreshVarName vs = oneof $ map return (varNames \\ vs)
 
-genFreshIdes :: Context -> Int -> Gen [Ide]
-genFreshIdes vs 0 = return []
-genFreshIdes vs n = do 
+genFreshIde :: Context -> Gen Ide
+genFreshIde vs = do 
   nm <- genFreshVarName (map name vs)
-  let ide = Ide nm NoSpan
-  next <- genFreshIdes (ide:vs) (n - 1)
-  return $ ide:next
+  return $ Ide nm NoSpan
 
 numPrimitives :: [(String, Int)]
 -- a list of primitives that return numbers + the amount of parameters they require
@@ -107,16 +104,27 @@ genBeginExp' vs n = do
   return $ (currExp : nextExps)
 
 
+genBinds :: Context -> Int -> Gen [(Ide, Exp)]
+genBinds _ 0 = return []
+genBinds vs n = do k <- choose (1, n)
+                   genBinds' vs k
+
+genBinds' :: Context -> Int -> Gen [(Ide, Exp)]
+genBinds' _ 0 = return []
+genBinds' vs n = do 
+  ide <- genFreshIde vs
+  e <- genValExp vs (quot n 2)
+  nextBds <- genBinds (vs ++ [ide]) (quot n 2)
+  return $ (ide, e) : nextBds
+
 genLetExp :: Context -> Int -> Gen Exp 
 -- | generates lets
 genLetExp vs 0 = genSimpleExp vs
 genLetExp vs n = do 
-  ides <- genFreshIdes vs (quot n 2) 
-  e <- scale (\n -> quot n 2) $ listOf (genValExp vs (quot n 2))
-  let binds = zip ides e
+  binds <- genBinds vs (quot n 2)
   let newVs = vs ++ (map fst binds)
   body <- genValExp newVs (quot n 2); 
-  let' <- oneof $ map return [Let, Ltt, Ltr, Lrr] -- todo: let recursive lets make use of their recursive-ness
+  let' <- oneof $ map return [Ltt, Lrr] --[Let, Ltt, Ltr, Lrr] -- todo: fix non-recursive let bindings
   return $ let' binds body NoSpan 
 
 instance Arbitrary Ide where 

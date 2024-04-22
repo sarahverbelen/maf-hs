@@ -1,1 +1,1 @@
-(letrec ((h 24) (n 16) (w (begin (* -2 8) 17 -28)) (o 16)) (begin (set! n (* 22 o)) (set! h n) (+ -23 29)))
+(let* ((v (if #f -8 26)) (d -2)) (/ (begin (set! v -14) v) -4))

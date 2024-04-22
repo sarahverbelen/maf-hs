@@ -125,7 +125,7 @@ sliceApp :: Exp -> [Exp] -> Span -> ToSlice -> UsedVars -> Exp
 sliceApp _ _ s (AppS True _) _ = Nll s
 sliceApp prc ops s (AppS False lbls) (AppU _ vars) = 
    let ops' = map (uncurry $ uncurry sliceExp') (zip (zip ops lbls) vars)
-   in App prc ops' s  
+   in App prc ops' s   
 
 -- | USED VARIABLE ANALYSIS PASS (back to front, single-pass live variable analysis)
 -- to find out what variables need to keep their initial defines
@@ -263,7 +263,5 @@ labelIrrIf e@(Iff b c a s) (If g lblC lblA) = do   sto <- get
 labelIrrApp :: Exp -> Labels -> LabelIrrState 
 labelIrrApp e@(App prc ops s) (Appl g lbls) = do sto <- get 
                                                  let b = preserve sto g e
-                                                 if b 
-                                                   then return $ SkipS True 
-                                                   else do ops' <- mapM (uncurry labelIrrelevant') (zip ops lbls)
-                                                           return $ AppS False (map relabelIrrBindingExp ops')                                                
+                                                 ops' <- mapM (uncurry labelIrrelevant') (zip ops lbls)
+                                                 return $ AppS (not b) (map relabelIrrBindingExp ops')                                                

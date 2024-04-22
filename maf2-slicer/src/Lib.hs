@@ -79,3 +79,4 @@ testSlicer = do
       putStrLn $ show v1 
       let v2 = Map.lookup var s2 
       putStrLn $ show v2
+      putStrLn $ show $ v1 == v2
