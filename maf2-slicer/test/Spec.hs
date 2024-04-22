@@ -132,15 +132,16 @@ instance Arbitrary Exp where
 
 prop_preserved_semantics :: Exp -> Bool 
 prop_preserved_semantics e = 
-  let var = "x"
+  let vsInExp = getVarsFromExp' e
+      var = head vsInExp
       criterion = [(var, PAll)] -- TODO 
       e' = slice e criterion
       s = mempty
       (_, s1) = abstractEval' e s
       (_, s2) = abstractEval' e' s
       v1 = Map.lookup var s1 
-      v2 = Map.lookup var s2  
-  in v1 == v2
+      v2 = Map.lookup var s2 
+  in if (null vsInExp) then True else v1 == v2 
 
 main :: IO ()
 main = do 
