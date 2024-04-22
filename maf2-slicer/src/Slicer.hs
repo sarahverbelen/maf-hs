@@ -20,8 +20,8 @@ slice :: Exp -> Agreement -> Exp
 -- | takes a program and a criterion (= agreement (= list of relevant variables)) and returns the program where only statements affecting the criterion are remaining
 slice p c = sliceExp vars p $ labelSequence p c where vars = getVars c
 
-data UsedVars = LetU [String] [UsedVars] UsedVars | IfU [String] UsedVars UsedVars | BindingU [String] UsedVars | SkipU [String] | BeginU [String] [UsedVars] deriving (Eq, Show)
-data ToSlice  = LetS Bool [ToSlice] ToSlice | IfS Bool ToSlice ToSlice | BindingS Bool ToSlice | SkipS Bool | BeginS Bool [ToSlice] deriving (Eq, Show)
+data UsedVars = LetU [String] [UsedVars] UsedVars | IfU [String] UsedVars UsedVars | BindingU [String] UsedVars | SkipU [String] | BeginU [String] [UsedVars] | AppU [String] [UsedVars] deriving (Eq, Show)
+data ToSlice  = LetS Bool [ToSlice] ToSlice | IfS Bool ToSlice ToSlice | BindingS Bool ToSlice | SkipS Bool | BeginS Bool [ToSlice] | AppS Bool [ToSlice] deriving (Eq, Show)
 
 getUsedVars :: UsedVars -> [String]
 getUsedVars (LetU vs _ _)   = vs 
@@ -29,6 +29,7 @@ getUsedVars (IfU vs _ _)    = vs
 getUsedVars (BindingU vs _) = vs 
 getUsedVars (SkipU vs)      = vs 
 getUsedVars (BeginU vs _)   = vs
+getUsedVars (AppU vs _)     = vs
 
 sliceBool :: ToSlice -> Bool 
 sliceBool (LetS b _ _)   = b
@@ -36,6 +37,7 @@ sliceBool (IfS b _ _)    = b
 sliceBool (BindingS b _) = b 
 sliceBool (SkipS b)      = b 
 sliceBool (BeginS b _)   = b
+sliceBool (AppS b _)     = b 
 
 dummyExp :: Span -> Exp 
 dummyExp s = App (Var (Ide "dummy" s)) [Num 5 NoSpan] NoSpan -- todo: use value that corresponds to known abstract value
@@ -59,6 +61,7 @@ sliceExp' (Dfv var e s)   toslice used = sliceAssignment var e s False toslice u
 sliceExp' (Set var e s)   toslice used = sliceAssignment var e s True toslice used
 sliceExp' (Bgn es s)      toslice used = sliceBegin es s toslice used
 sliceExp' (Iff b c a s)   toslice used = sliceIf b c a s toslice used
+sliceExp' (App prc ops s) toslice used = sliceApp prc ops s toslice used
 sliceExp' e _ _                        = e
 
 sliceLet :: [(Ide, Exp)] -> Exp -> Span -> ([(Ide, Exp)] -> Exp -> Span -> Exp) -> ToSlice -> UsedVars -> Exp  
@@ -117,6 +120,13 @@ sliceIf b c a s (IfS False lblC lblA) (IfU _ varsC varsA) =
        a' = sliceExp' a lblA varsA    
    in if (isNll c' && isNll a') then Nll s else Iff b c' a' s
 
+-- assuming the procedure is a primitive that doesn't modify the state
+sliceApp :: Exp -> [Exp] -> Span -> ToSlice -> UsedVars -> Exp 
+sliceApp _ _ s (AppS True _) _ = Nll s
+sliceApp prc ops s (AppS False lbls) (AppU _ vars) = 
+   let ops' = map (uncurry $ uncurry sliceExp') (zip (zip ops lbls) vars)
+   in App prc ops' s  
+
 -- | USED VARIABLE ANALYSIS PASS (back to front, single-pass live variable analysis)
 -- to find out what variables need to keep their initial defines
 findUsedVars :: Exp -> ToSlice -> UsedVars -> UsedVars 
@@ -129,6 +139,7 @@ findUsedVars (Dfv var e s)   toslice used = findUsedVarsBinding var e False tosl
 findUsedVars (Set var e s)   toslice used = findUsedVarsBinding var e True toslice used
 findUsedVars (Bgn es s)      toslice used = findUsedVarsBegin es toslice used
 findUsedVars (Iff b c a s)   toslice used = findUsedVarsIf b c a toslice used  
+findUsedVars (App prc ops s) toslice used = findUsedVarsApp prc ops toslice used
 findUsedVars e               _       used = SkipU ((getVarsFromExp' e) `union` (getUsedVars used))
 
 findUsedVarsLet :: [(Ide, Exp)] -> Exp -> ToSlice -> UsedVars -> UsedVars 
@@ -162,6 +173,13 @@ findUsedVarsBegin es (BeginS False lbls) used =
    let usedVarsEs = reverse $ findUsedVarsExps (reverse es) (reverse lbls) used
        usedVars = if null usedVarsEs then [] else getUsedVars $ head usedVarsEs
    in BeginU (usedVars `union` (getUsedVars used)) usedVarsEs    
+
+findUsedVarsApp :: Exp -> [Exp] -> ToSlice -> UsedVars -> UsedVars 
+findUsedVarsApp _ _ (AppS True _) used = used 
+findUsedVarsApp _ ops (AppS False lbls) used = 
+   let usedVarsOps = reverse $ findUsedVarsExps (reverse ops) (reverse lbls) used 
+       usedVars = if null usedVarsOps then [] else getUsedVars $ head usedVarsOps
+   in AppU (usedVars `union` (getUsedVars used)) usedVarsOps   
 
 findUsedVarsExps :: [Exp] -> [ToSlice] -> UsedVars -> [UsedVars]
 findUsedVarsExps [] _ _ = []
@@ -206,12 +224,12 @@ labelIrrExp' (Bgn es s) (Begin lbls)   = do es' <- mapM (uncurry labelIrrelevant
                                                then return $ BeginS True []
                                                else return $ BeginS False es'
 labelIrrExp' e@(Iff _ _ _ _) l         = labelIrrIf e l    
+labelIrrExp' e@(App _ _ _) l           = labelIrrApp e l 
 labelIrrExp' _ (Val _)                 = return $ SkipS False                       
 
 labelIrrLet :: Exp -> [(Ide, Exp)] -> Exp -> Span -> ([(Ide, Exp)] -> Exp -> Span -> Exp) -> Labels -> LabelIrrState
 labelIrrLet e bds bdy s let' (Lett lbls lbl)   = do bds' <- mapM labelIrrBinding (zip bds lbls)
                                                     sto <- get 
-                                                   --  error $ (show sto) ++ (show bds')
                                                     bdy' <- labelIrrelevant' bdy lbl 
                                                     return $ LetS False bds' bdy'
 
@@ -220,7 +238,7 @@ labelIrrBinding ((var, exp), (Binding g lbl)) =
    do eLbl <- labelIrrelevant' exp lbl
       let eLbl' = relabelIrrBindingExp eLbl
       s <- get
-      let (b, s') = preserveWithSto s g (Dfv var exp NoSpan) 
+      let (b, s') = preserveWithSto s g (Set var exp NoSpan) 
       put s'
       if b 
          then do return $ BindingS True eLbl'  
@@ -232,6 +250,7 @@ relabelIrrBindingExp (SkipS _) = SkipS False
 relabelIrrBindingExp (BeginS _ es) = BeginS False $ (init es) ++ [(relabelIrrBindingExp $ last es)]
 relabelIrrBindingExp (IfS _ c a) = IfS False (relabelIrrBindingExp c) (relabelIrrBindingExp a)
 relabelIrrBindingExp (LetS _ bds bdy) = LetS False bds (relabelIrrBindingExp bdy)
+relabelIrrBindingExp (AppS _ lbls) = AppS False (map relabelIrrBindingExp lbls)
 relabelIrrBindingExp l = l                 
 
 labelIrrIf :: Exp -> Labels -> LabelIrrState 
@@ -240,3 +259,11 @@ labelIrrIf e@(Iff b c a s) (If g lblC lblA) = do   sto <- get
                                                    a' <- labelIrrelevant' a lblA; 
                                                    put sto
                                                    return $ IfS False c' a'
+
+labelIrrApp :: Exp -> Labels -> LabelIrrState 
+labelIrrApp e@(App prc ops s) (Appl g lbls) = do sto <- get 
+                                                 let b = preserve sto g e
+                                                 if b 
+                                                   then return $ SkipS True 
+                                                   else do ops' <- mapM (uncurry labelIrrelevant') (zip ops lbls)
+                                                           return $ AppS False (map relabelIrrBindingExp ops')                                                

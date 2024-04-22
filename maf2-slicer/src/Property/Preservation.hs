@@ -43,7 +43,7 @@ preserve' (Bgn (e:es) x) g      = do    b <- preserve' e g
 -- |PP-IF
 preserve' (Iff b c a _) g       = preserveIf b c a g
 -- | PP-APP *
---preserve' (App prc ops _) _     = 
+preserve' (App prc ops _) g     = preserveApp g prc ops
 -- | PP-FUNCTIONDEF *
 --preserve' (Dff var ags bdy _) _  = 
 -- | PP-LAMBDA *
@@ -83,3 +83,8 @@ preserveIf _ c a g = do   s <- get
                           bc <- preserve' c g 
                           put s; ba <- preserve' a g
                           put s; return $ bc && ba                         
+
+-- | PP-APP * (assuming the procedure is a primitive that doesn't change the state)
+preserveApp :: Agreement -> Exp -> [Exp] -> PreserveState 
+preserveApp g _ ops = do bs <- mapM (\op -> preserve' op g) ops
+                         return $ and bs

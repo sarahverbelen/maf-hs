@@ -133,8 +133,8 @@ instance Arbitrary Exp where
 prop_preserved_semantics :: Exp -> Bool 
 prop_preserved_semantics e = 
   let vsInExp = getVarsFromExp' e
-      var = head vsInExp
-      criterion = [(var, PAll)] -- TODO 
+      var = head vsInExp -- todo: pick random var from expression to test?
+      criterion = [(var, PAll)]
       e' = slice e criterion
       s = mempty
       (_, s1) = abstractEval' e s

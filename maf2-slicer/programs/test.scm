@@ -1,8 +1,1 @@
-(letrec* ((a 12) 
-          (b (let* ((t 21)) -4)))
-    (+ a 
-       (begin 
-          (set! a -7) 
-          a)))
-
-          
+(letrec ((h 24) (n 16) (w (begin (* -2 8) 17 -28)) (o 16)) (begin (set! n (* 22 o)) (set! h n) (+ -23 29)))

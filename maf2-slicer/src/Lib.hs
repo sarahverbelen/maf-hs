@@ -65,16 +65,17 @@ testSlicer :: IO ()
 testSlicer = do 
       contents <- readFile testProgram 
       let e = fromJust $ parseString contents
+      putStrLn $ show e
       let vsInExp = getVarsFromExp' e
       let var = head vsInExp
-      let criterion = [(var, PAll)] 
+      let criterion = [(var, PAll)]
+      putStrLn $ show criterion 
       let e' = slice e criterion
+      putStrLn $ show e' 
       let s = mempty
       let (_, s1) = abstractEval' e s
       let (_, s2) = abstractEval' e' s
       let v1 = Map.lookup var s1 
-      let v2 = Map.lookup var s2 
-      putStrLn $ show e 
       putStrLn $ show v1 
-      putStrLn $ show e' 
+      let v2 = Map.lookup var s2 
       putStrLn $ show v2

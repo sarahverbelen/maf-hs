@@ -16,7 +16,7 @@ import Control.Monad.State
 import Data.List (union, delete)
 import qualified Data.Map as Map
 
-data Labels = Lett [Labels] Labels | If Agreement Labels Labels | Binding Agreement Labels | Skip Agreement | Begin [Labels]  | Val Agreement deriving (Show, Eq)
+data Labels = Lett [Labels] Labels | If Agreement Labels Labels | Binding Agreement Labels | Skip Agreement | Begin [Labels]  | Val Agreement | Appl Agreement [Labels] deriving (Show, Eq)
 
 isSkip :: Labels -> Bool 
 isSkip (Skip _) = True 
@@ -40,23 +40,27 @@ shiftLabels' :: Labels -> State Agreement Labels
 -- and returning the shifted labels and the agreement which was the first one of the sequence
 shiftLabels' (Skip g)                   = do    g' <- get; put g
                                                 return $ Skip g'
-shiftLabels' (Val g)                   = do     g' <- get; put g
+shiftLabels' (Val g)                    = do    g' <- get; put g
                                                 return $ Val g'                                                
 shiftLabels' (Begin lbls)               = do    lbls' <- mapM shiftLabels' (reverse lbls)
                                                 return $ Begin (reverse lbls')
-shiftLabels' (Binding g lbl)           = do     lbl' <- shiftLabels' lbl
+shiftLabels' (Binding g lbl)            = do    lbl' <- shiftLabels' lbl
                                                 g'' <- get 
                                                 put g
                                                 return $ Binding g'' lbl'
-shiftLabels' (If gb lblC lblA)           = do   g <- get
+shiftLabels' (If gb lblC lblA)          = do    g <- get
                                                 lblC' <- shiftLabels' lblC; gc <- get; put g
                                                 lblA' <- shiftLabels' lblA; ga <- get;
                                                 let g' = (ga `union` gc) `union` gb
                                                 put g'
                                                 return $ If gb lblC' lblA'
-shiftLabels' (Lett lblBds lblBdy)     = do      lblBdy' <- shiftLabels' lblBdy 
+shiftLabels' (Lett lblBds lblBdy)       = do    lblBdy' <- shiftLabels' lblBdy 
                                                 lblBds' <- mapM shiftLabels' (reverse lblBds)
-                                                return $ Lett (reverse lblBds') lblBdy'                                                
+                                                return $ Lett (reverse lblBds') lblBdy'   
+shiftLabels' (Appl g' lbls)             = do    lbls' <- mapM shiftLabels' lbls 
+                                                g <- get 
+                                                put g' 
+                                                return $ Appl g lbls'                                                                                          
                                         
 ---------------------------------------------------------------------------------------------------
 --- G-SYSTEM RULES
@@ -80,8 +84,8 @@ labelExp (Let bds bdy _) = labelLet bds bdy
 labelExp (Ltt bds bdy _) = labelLet bds bdy
 labelExp (Ltr bds bdy _) = labelLet bds bdy
 labelExp (Lrr bds bdy _) = labelLet bds bdy
--- | G-APP *
---labelExp e@(App prc ops s) =
+-- | G-APP * (we assume the procedure is a primitive)
+labelExp e@(App prc ops s) = labelApp prc ops
 -- | G-FUNCTIONDEF * 
 --labelExp e@(Dff var ags bdy s) = 
 -- | G-LAMBDA * 
@@ -103,10 +107,17 @@ labelBinding (var, e) = do  (sto, g) <- get
                             -- then the new agreement contains all variables that this expression is dependent on + all of the previous ones except the current one being assigned
                             let g' = if (name var) `elem` (map fst g) then union (deleteFromAL (name var) g) $ findNDeps e (lookup (name var) g) (extendStateForExp e sto) else g
                             -- else the agreement stays the same
-                            let (v, sto') = abstractEval' (Dfv var e NoSpan) sto
+                            let (v, sto') = abstractEval' (Set var e NoSpan) sto
                             -- update the state
                             put (sto', g')
                             return (Binding g' eLbl)         
+
+-- | G-APP * (assuming the procedure is a primitive)
+labelApp :: Exp -> [Exp] -> LabelState 
+labelApp _ ops = do 
+    lbls <- mapM labelExp (reverse ops)
+    (_, g) <- get 
+    return (Appl g (reverse lbls))
 
 -- | G-IF
 labelIf :: Exp -> Exp -> Exp -> LabelState
