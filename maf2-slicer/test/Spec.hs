@@ -8,11 +8,28 @@ import Property.Agreement
 import Test.QuickCheck
 import qualified Data.Map as Map
 import Data.Maybe
+import Data.List ((\\))
 
 -- generators
 
+type Context = [Ide] -- the context contains all variables that are defined in the current environment
+
+varNames :: [String]
+varNames = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"]
+
 genVarName :: Gen String 
-genVarName = oneof $ map return ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"]
+genVarName = oneof $ map return varNames 
+
+genFreshVarName :: [String] -> Gen String 
+genFreshVarName vs = oneof $ map return (varNames \\ vs)
+
+genFreshIdes :: Context -> Int -> Gen [Ide]
+genFreshIdes vs 0 = return []
+genFreshIdes vs n = do 
+  nm <- genFreshVarName (map name vs)
+  let ide = Ide nm NoSpan
+  next <- genFreshIdes (ide:vs) (n - 1)
+  return $ ide:next
 
 numPrimitives :: [(String, Int)]
 -- a list of primitives that return numbers + the amount of parameters they require
@@ -26,8 +43,6 @@ genPrimitive :: [(String, Int)] -> Gen (Exp, Int)
 genPrimitive primList = do
   (primName, args) <- oneof $ map return primList
   return (Var (Ide primName NoSpan), args)
-
-type Context = [Ide] -- the context contains all variables that are defined in the current environment
 
 genBoolExp :: Context -> Int -> Gen Exp 
 -- | generates expressions that return booleans
@@ -44,7 +59,7 @@ genStatementExp :: Context -> Int -> Gen (Exp, Context)
 genStatementExp [] _ = do e <- genValExp [] 0; return (e, [])
 genStatementExp vs n = frequency [ 
   -- define
-  (1, do ide <- elements vs; e <- genValExp vs (quot n 2); return (Dfv ide e NoSpan, vs ++ [ide])),
+  --(1, do ide <- elements vs; e <- genValExp vs (quot n 2); return (Dfv ide e NoSpan, vs ++ [ide])),
   -- set 
   (2, do ide <- elements vs; e <- genValExp vs (quot n 2); return (Set ide e NoSpan, vs))
   ]
@@ -66,7 +81,6 @@ genValExp vs n = frequency [
       (6, genSimpleExp vs),
       -- begin
       (2, genBeginExp vs (quot n 2)),
-      --(1, do es <- scale (\n -> quot n 2) $ listOf (oneof [genStatementExp vs (quot n 2), genValExp vs (quot n 2)]); lastE <- genValExp vs (quot n 2); return $ Bgn (es ++ [lastE]) NoSpan),
       -- if 
       (2, do b <- genBoolExp vs (quot n 2); c <- genValExp vs (quot n 2) ; a <- genValExp vs (quot n 2); return $ Iff b c a NoSpan),
       -- let
@@ -97,8 +111,8 @@ genLetExp :: Context -> Int -> Gen Exp
 -- | generates lets
 genLetExp vs 0 = genSimpleExp vs
 genLetExp vs n = do 
-  ides <- scale (\n -> quot n 2) $ listOf arbitrary; 
-  e <- scale (\n -> quot n 2) $ listOf (genValExp vs (quot n 2)); 
+  ides <- genFreshIdes vs (quot n 2) 
+  e <- scale (\n -> quot n 2) $ listOf (genValExp vs (quot n 2))
   let binds = zip ides e
   let newVs = vs ++ (map fst binds)
   body <- genValExp newVs (quot n 2); 
@@ -117,9 +131,8 @@ instance Arbitrary Exp where
 -- properties
 
 prop_preserved_semantics :: Exp -> Bool 
-prop_preserved_semantics p = 
-  let e = fromJust $ parseString $ show p
-      var = "x"
+prop_preserved_semantics e = 
+  let var = "x"
       criterion = [(var, PAll)] -- TODO 
       e' = slice e criterion
       s = mempty
@@ -130,5 +143,6 @@ prop_preserved_semantics p =
   in v1 == v2
 
 main :: IO ()
-main = sample (arbitrary :: Gen Exp)
-  --quickCheck prop_preserved_semantics
+main = do 
+  sample (arbitrary :: Gen Exp)
+  quickCheck prop_preserved_semantics
