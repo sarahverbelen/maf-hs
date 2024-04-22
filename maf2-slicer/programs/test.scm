@@ -1,7 +1,8 @@
-(define a 6)
-(define b 7)
-(define x 8)
-(if (> a b)
-    (set! x a)
-    (set! b 0))
-x
+(letrec* ((a 12) 
+          (b (let* ((t 21)) -4)))
+    (+ a 
+       (begin 
+          (set! a -7) 
+          a)))
+
+          

@@ -4,4 +4,4 @@ import Lib
 
 
 main :: IO ()
-main = testLabeling
+main = testSlicer

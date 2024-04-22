@@ -122,7 +122,7 @@ allPrimitives = [
    fix2 "=" eq,
    fix1 "random" Domain.random,
    fix0 "bool-top" $ return Domain.boolTop,
-   fix0 "dummy" $ return bottom
+   fix1 "dummy" $ return
    -- fix1 "error" todo
    ]
 

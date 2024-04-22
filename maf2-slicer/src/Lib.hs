@@ -61,3 +61,20 @@ testLabeling = do
     -- let usedVars = findUsedVars e irrLbls (SkipU (getVars testX))
     -- putStrLn $ show $ usedVars
     
+testSlicer :: IO ()
+testSlicer = do 
+      contents <- readFile testProgram 
+      let e = fromJust $ parseString contents
+      let vsInExp = getVarsFromExp' e
+      let var = head vsInExp
+      let criterion = [(var, PAll)] 
+      let e' = slice e criterion
+      let s = mempty
+      let (_, s1) = abstractEval' e s
+      let (_, s2) = abstractEval' e' s
+      let v1 = Map.lookup var s1 
+      let v2 = Map.lookup var s2 
+      putStrLn $ show e 
+      putStrLn $ show v1 
+      putStrLn $ show e' 
+      putStrLn $ show v2

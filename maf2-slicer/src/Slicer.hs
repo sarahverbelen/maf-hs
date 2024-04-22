@@ -38,8 +38,8 @@ sliceBool (SkipS b)      = b
 sliceBool (BeginS b _)   = b
 
 dummyExp :: Span -> Exp 
-dummyExp s = Var (Ide "dummy" s)
-
+dummyExp s = App (Var (Ide "dummy" s)) [Num 5 NoSpan] NoSpan -- todo: use value that corresponds to known abstract value
+ 
 -- | SLICING PASS (front to back)
 -- takes the information from the used variables and the irrelevant expressions to slice away irrelevant expressions that don't define a used variable.
 
