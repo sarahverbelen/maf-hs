@@ -7,6 +7,8 @@ module Slicer where
 import Control.Monad.State    
 import Prelude hiding (exp)
 import Data.List (union, (\\))
+import qualified Data.Map as Map
+import Data.Maybe (fromJust)
 
 import Property.Agreement 
 import Property.Preservation
@@ -21,7 +23,7 @@ slice :: Exp -> Agreement -> Exp
 slice p c = sliceExp vars p $ labelSequence p c where vars = getVars c
 
 data UsedVars = LetU [String] [UsedVars] UsedVars | IfU [String] UsedVars UsedVars | BindingU [String] UsedVars | SkipU [String] | BeginU [String] [UsedVars] | AppU [String] [UsedVars] deriving (Eq, Show)
-data ToSlice  = LetS Bool [ToSlice] ToSlice | IfS Bool ToSlice ToSlice | BindingS Bool ToSlice | SkipS Bool | BeginS Bool [ToSlice] | AppS Bool [ToSlice] deriving (Eq, Show)
+data ToSlice  = LetS Bool [ToSlice] ToSlice | IfS Bool ToSlice ToSlice | BindingS V Bool ToSlice | SkipS Bool | BeginS Bool [ToSlice] | AppS Bool [ToSlice] deriving (Eq, Show)
 
 getUsedVars :: UsedVars -> [String]
 getUsedVars (LetU vs _ _)   = vs 
@@ -34,13 +36,13 @@ getUsedVars (AppU vs _)     = vs
 sliceBool :: ToSlice -> Bool 
 sliceBool (LetS b _ _)   = b
 sliceBool (IfS b _ _)    = b 
-sliceBool (BindingS b _) = b 
+sliceBool (BindingS _ b _) = b 
 sliceBool (SkipS b)      = b 
 sliceBool (BeginS b _)   = b
 sliceBool (AppS b _)     = b 
 
-dummyExp :: Span -> Exp 
-dummyExp s = App (Var (Ide "dummy" s)) [Num 5 NoSpan] NoSpan -- todo: use value that corresponds to known abstract value
+dummyExp :: V -> Span -> Exp 
+dummyExp v s = App (Var (Ide "dummy" s)) [dummyValue v] NoSpan
  
 -- | SLICING PASS (front to back)
 -- takes the information from the used variables and the irrelevant expressions to slice away irrelevant expressions that don't define a used variable.
@@ -74,7 +76,7 @@ sliceLet bds bdy s let' (LetS False lblBds lblBdy) (LetU vars varsBds varsBdy) =
 
 sliceBinds :: [(Ide, Exp)] -> [ToSlice] -> [UsedVars] -> [(Ide, Exp)] 
 sliceBinds [] _ _ = []
-sliceBinds (bd:bds) (l@(BindingS _ eLbl):toslice) ((BindingU vars varsE):used) = 
+sliceBinds (bd:bds) (l@(BindingS val _ eLbl):toslice) ((BindingU vars varsE):used) = 
    let b = sliceBind bd l vars 
        (var, e) = bd
        nextBds = sliceBinds bds toslice used
@@ -84,26 +86,25 @@ sliceBinds (bd:bds) (l@(BindingS _ eLbl):toslice) ((BindingU vars varsE):used) =
          then nextBds -- slice the binding completely
          else if (b == Nothing) 
             then [(var, e')] ++ nextBds -- keep the binding
-            else [(var, dummyExp (spanOf e))] ++ nextBds -- dummify the binding
-sliceBinds (bd:bds) (l@(BindingS _ eLbl):toslice) used = error $ show used           
+            else [(var, dummyExp val (spanOf e))] ++ nextBds -- dummify the binding        
 
 sliceBind :: (Ide, Exp) -> ToSlice -> [String] -> Maybe Bool 
-sliceBind bd (BindingS False _) vars = Nothing -- this binding is necessary
-sliceBind (var, e) (BindingS True _) vars = if (name var) `elem` vars 
+sliceBind bd (BindingS _ False _) vars = Nothing -- this binding is necessary
+sliceBind (var, e) (BindingS _ True _) vars = if (name var) `elem` vars 
    then Just False -- this binding could be sliced away but it is used in some other expression so we need to dummify it
    else Just True -- this binding can be sliced away
 
 sliceAssignment :: Ide -> Exp -> Span -> Bool -> ToSlice -> UsedVars -> Exp
-sliceAssignment var e s set (BindingS False eLbl) (BindingU _ varsE) = 
+sliceAssignment var e s set (BindingS _ False eLbl) (BindingU _ varsE) = 
    let def' = if set then Set else Dfv
       --  e' = e
        e' = sliceExp' e eLbl varsE
    in def' var e' s
-sliceAssignment var e s set (BindingS True _) used =
+sliceAssignment var e s set (BindingS val True _) used =
    let def' = if set then Set else Dfv
        vars = getUsedVars used
    in if ((name var) `elem` vars) && (not set)
-         then def' var (dummyExp (spanOf e)) s
+         then def' var (dummyExp val (spanOf e)) s
          else Nll s
 
 sliceBegin :: [Exp] -> Span -> ToSlice -> UsedVars -> Exp
@@ -159,8 +160,8 @@ findUsedVarsBindings ((var, e):bds) (toslice:lblBds) used =
    in (usedVars:nextVars)
  
 findUsedVarsBinding :: Ide -> Exp -> Bool -> ToSlice -> UsedVars -> UsedVars
-findUsedVarsBinding var _ _ (BindingS True _) used = BindingU (getUsedVars used) (SkipU [])
-findUsedVarsBinding var e isSet (BindingS False toslice) used = 
+findUsedVarsBinding var _ _ (BindingS _ True _) used = BindingU (getUsedVars used) (SkipU [])
+findUsedVarsBinding var e isSet (BindingS _ False toslice) used = 
    let prevUsed = getUsedVars used 
        varsExp = findUsedVars e toslice used
        usedInExp = getUsedVars varsExp
@@ -240,9 +241,10 @@ labelIrrBinding ((var, exp), (Binding g lbl)) =
       s <- get
       let (b, s') = preserveWithSto s g (Set var exp NoSpan) 
       put s'
+      let v = fromJust $ Map.lookup (name var) s'
       if b 
-         then do return $ BindingS True eLbl'  
-         else do return $ BindingS False eLbl'  
+         then do return $ BindingS v True eLbl'  
+         else do return $ BindingS v False eLbl'  
 
 relabelIrrBindingExp :: ToSlice -> ToSlice 
 -- relabels the expression bound to a variable so that the return value is kept 

@@ -1,10 +1,10 @@
-{-# LANGUAGE FlexibleContexts, UndecidableInstances #-}
+{-# LANGUAGE FlexibleContexts, UndecidableInstances, MultiParamTypeClasses, FunctionalDependencies, FlexibleInstances #-}
 
 module Dependency.Lattice where 
 
 import Domain hiding (Exp)
 import Lattice
-import Syntax.Scheme.AST (Ide, Exp)
+import Syntax.Scheme.AST
 import qualified Control.Monad.Escape as Escape
 
 import Prelude hiding (null)
@@ -78,7 +78,7 @@ instance (TopLattice (ModularSchemeValue r i c b pai vec str var exp env), Refin
                 primitives = primitives v
         } | r <- refine $ real v, i <- refine $ integer v, b <- refine $ boolean v]
 
-instance (AtomicLattice r, AtomicLattice i, AtomicLattice c, AtomicLattice b, RealDomain r, IntDomain i, CharDomain c, BoolDomain b, Address pai, Address vec, Address str, Ord env, Ord exp, Show env)
+instance (AtomicLattice r, AtomicLattice i, AtomicLattice b, RealDomain r, IntDomain i, CharDomain c, BoolDomain b, Address pai, Address vec, Address str, Ord env, Ord exp, Show env)
     => AtomicLattice (ModularSchemeValue r i c b pai vec str var exp env) where
         atom v = (atom $ real v) && (atom $ integer v) && (atom $ boolean v)
 
@@ -91,3 +91,39 @@ instance (AtomicLattice a, Joinable e, Eq e) => AtomicLattice (Escape.MayEscape 
 
 instance (TopLattice a, Joinable e, Eq e) => TopLattice (Escape.MayEscape e a) where 
     top = Escape.Value top    
+
+class DummyValue v c where 
+-- | an abstract value that can be "unabstracted" into an example concrete value
+    dummyValue :: v -> c
+
+instance (Num i) => DummyValue Sign i where 
+    dummyValue ZeroOrNeg = -1
+    dummyValue ZeroOrPos = 1 
+    dummyValue Zero = 0 
+    dummyValue Pos = 2 
+    dummyValue Neg = -2
+    dummyValue _ = 3
+
+
+instance (DummyValue a c) => DummyValue (CP a) c where 
+    dummyValue (Constant v) = dummyValue v 
+    --dummyValue _ = 
+
+instance DummyValue Bool Bool where 
+    dummyValue b = b
+
+instance (DummyValue a c) => DummyValue (Maybe a) c where 
+    dummyValue (Just v) = dummyValue v
+    dummyValue Nothing = error "nothing value for dummy"
+
+
+instance (DummyValue r Double, DummyValue i Integer, DummyValue b Bool, RealDomain r, Ord i, Ord r, Ord c, Ord b, IntDomain i, CharDomain c, BoolDomain b, Address pai, Address vec, Address str, Ord env, Ord exp, Show env, Show (ModularSchemeValue r i c b pai vec str var exp env)) 
+    => DummyValue (ModularSchemeValue r i c b pai vec str var exp env) Exp where
+    dummyValue v = 
+        if (real v) /= Nothing
+            then Rea (dummyValue $ real v) NoSpan 
+            else if (integer v) /= Nothing 
+                    then Num (dummyValue $ integer v) NoSpan 
+                    else if (boolean v) /= Nothing 
+                        then Bln (dummyValue $ boolean v) NoSpan 
+                        else Nll NoSpan
