@@ -8,20 +8,17 @@ import Property.Agreement
 import Test.QuickCheck
 import qualified Data.Map as Map
 import Data.Maybe
-import Data.List ((\\))
+import Data.List ((\\), elem)
 
 -- generators
 
 type Context = [Ide] -- the context contains all variables that are defined in the current environment
 
-varNames :: [String]
-varNames = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"]
-
-genVarName :: Gen String 
-genVarName = oneof $ map return varNames 
+genLetter :: Gen Char 
+genLetter = oneof $ map return ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
 
 genFreshVarName :: [String] -> Gen String 
-genFreshVarName vs = oneof $ map return (varNames \\ vs)
+genFreshVarName vs = (listOf1 genLetter) `suchThat` (\nm -> not $ nm `elem` vs)
 
 genFreshIde :: Context -> Gen Ide
 genFreshIde vs = do 
@@ -65,7 +62,7 @@ genSimpleExp :: Context -> Gen Exp
 genSimpleExp [] = do randNr <- choose (-30, 30); return $ Num randNr NoSpan
 genSimpleExp vs = frequency [
       (3, do randNr <- choose (-30, 30); return $ Num randNr NoSpan),
-      -- , do randNr <- choose (-30, 30); return $ Rea randNr NoSpan
+      -- (2, do randNr <- choose (-30, 30); return $ Rea randNr NoSpan),
       (2, do ide <- elements vs; return $ Var ide),
       (2, do (prim, args) <- genPrimitive numPrimitives; ops <- vectorOf args (genSimpleExp vs); return $ App prim ops NoSpan)
       ] 
@@ -141,12 +138,12 @@ genLetExp vs n = do
 
 instance Arbitrary Ide where 
   arbitrary = do
-    name <- genVarName
+    name <- genFreshVarName []
     return $ Ide name NoSpan
 
 instance Arbitrary Exp where 
   arbitrary =
-    resize 10 $ sized (genLetExp [])
+    resize 20 $ sized (genLetExp [])
 
 -- properties
 
@@ -167,4 +164,4 @@ prop_preserved_semantics p =
 main :: IO ()
 main = do 
   sample (arbitrary :: Gen Exp)
-  quickCheck (withMaxSuccess 500 prop_preserved_semantics)
+  quickCheck (withMaxSuccess 100 prop_preserved_semantics)

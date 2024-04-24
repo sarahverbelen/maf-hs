@@ -107,7 +107,6 @@ instance (Num i) => DummyValue Sign i where
 
 instance (DummyValue a c) => DummyValue (CP a) c where 
     dummyValue (Constant v) = dummyValue v 
-    --dummyValue _ = 
 
 instance DummyValue Bool Bool where 
     dummyValue b = b
