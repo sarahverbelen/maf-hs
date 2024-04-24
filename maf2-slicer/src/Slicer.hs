@@ -242,9 +242,7 @@ labelIrrBinding ((var, exp), (Binding g lbl)) =
       let (b, s') = preserveWithSto s g (Set var exp NoSpan) 
       put s'
       let v = fromJust $ Map.lookup (name var) s'
-      if b 
-         then do return $ BindingS v True eLbl'  
-         else do return $ BindingS v False eLbl'  
+      return $ BindingS v b eLbl' 
 
 relabelIrrBindingExp :: ToSlice -> ToSlice 
 -- relabels the expression bound to a variable so that the return value is kept 
@@ -264,6 +262,15 @@ labelIrrIf e@(Iff b c a s) (If g lblC lblA) = do   sto <- get
 
 labelIrrApp :: Exp -> Labels -> LabelIrrState 
 labelIrrApp e@(App prc ops s) (Appl g lbls) = do sto <- get 
-                                                 let b = preserve sto g e
                                                  ops' <- mapM (uncurry labelIrrelevant') (zip ops lbls)
-                                                 return $ AppS (not b) (map relabelIrrBindingExp ops')                                                
+                                                 let ops'' = (map relabelIrrBindingExp ops')
+                                                 let b = not $ or $ map relevantBindingInExp ops''
+                                                 return $ AppS b ops''                                               
+
+relevantBindingInExp :: ToSlice -> Bool 
+relevantBindingInExp (BindingS _ False _) = True 
+relevantBindingInExp (BeginS _ es) = or $ map relevantBindingInExp es 
+relevantBindingInExp (IfS _ c a) = (relevantBindingInExp c) || (relevantBindingInExp a)
+relevantBindingInExp (LetS False _ _) = True 
+relevantBindingInExp (AppS _ lbls) = or $ map relevantBindingInExp lbls 
+relevantBindingInExp _ = False                                                

@@ -4,4 +4,7 @@ import Lib
 
 
 main :: IO ()
-main = testSlicer
+main = do
+    testLabeling
+    putStrLn ""
+    testSlicer

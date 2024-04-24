@@ -139,8 +139,9 @@ instance Arbitrary Exp where
 -- properties
 
 prop_preserved_semantics :: Exp -> Bool 
-prop_preserved_semantics e = 
-  let vsInExp = getVarsFromExp' e
+prop_preserved_semantics p = 
+  let e = fromJust $ parseString $ show p
+      vsInExp = getVarsFromExp' e
       var = head vsInExp -- todo: pick random var from expression to test?
       criterion = [(var, PAll)]
       e' = slice e criterion

@@ -52,13 +52,16 @@ testLabeling :: IO ()
 testLabeling = do 
     contents <- readFile testProgram 
     let e = fromJust $ parseString contents
-    putStrLn $ show e
-    let e' =  slice e testX
-    putStrLn $ show e' 
-    -- putStrLn $ show $ labelSequence e testX
-    -- let irrLbls = labelIrrelevant e (labelSequence e testX)
-    -- putStrLn $ show $ irrLbls
-    -- let usedVars = findUsedVars e irrLbls (SkipU (getVars testX))
+    let vsInExp = getVarsFromExp' e
+    let var = head vsInExp
+    let criterion = [(var, PAll)]
+    -- putStrLn $ show e
+    -- let e' =  slice e criterion
+    -- putStrLn $ show e' 
+    putStrLn $ show $ labelSequence e criterion
+    let irrLbls = labelIrrelevant e (labelSequence e criterion)
+    putStrLn $ show $ irrLbls
+    -- let usedVars = findUsedVars e irrLbls (SkipU (getVars criterion))
     -- putStrLn $ show $ usedVars
     
 testSlicer :: IO ()

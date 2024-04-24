@@ -67,15 +67,14 @@ preserveBinding g (var, e) = do s <- get
                                 put s'
                                 -- if this variable is in the agreement, we need to check if the property is preserved by the assignment     
                                 -- if the variable wasn't defined yet and it is in the agreement, the property is not preserved (ensures we don't remove the first definition of necessary variables!)
-                                let b = (not ((name var) `elem` (map fst g))) || sameValueAsBefore e var v s
+                                let b = (not ((name var) `elem` (map fst g))) || (sameValueAsBefore e var v s)
                                 return b
 
 sameValueAsBefore :: Exp -> Ide -> Value -> AbstractSto V -> Bool 
 sameValueAsBefore e var val sto = 
     let findValue nm st = fmap snd $ find (\(a, b) -> a == nm) $ Map.toList st
         b = (getValue val) `elem` (findValue (name var) sto)
-    -- in if null (getVarsFromExp' e) then (val /= bottom) && (val /= top) && b else error $ (show sto) ++ (show val) ++ (show $ findValue (name var) sto)
-   in (val /= bottom) && (val /= top) && b
+   in (not $ null $ Map.toList sto) && (val /= bottom) && (val /= top) && b && (getValue val /= bottom) && (getValue val /= top)
 
 -- |PP-IF (assumes no side effects in condition)
 preserveIf :: Exp -> Exp -> Exp -> Agreement -> PreserveState
