@@ -241,7 +241,7 @@ labelIrrBinding ((var, exp), (Binding g lbl)) =
       s <- get
       let (b, s') = preserveWithSto s g (Set var exp NoSpan) 
       put s'
-      let v = fromJust $ Map.lookup (name var) s'
+      let v = getValue $ abstractEval exp s
       return $ BindingS v b eLbl' 
 
 relabelIrrBindingExp :: ToSlice -> ToSlice 

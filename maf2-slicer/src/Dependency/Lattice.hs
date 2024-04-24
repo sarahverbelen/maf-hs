@@ -126,4 +126,4 @@ instance (DummyValue r Double, DummyValue i Integer, DummyValue b Bool, RealDoma
                     then Num (dummyValue $ integer v) NoSpan 
                     else if (boolean v) /= Nothing 
                         then Bln (dummyValue $ boolean v) NoSpan 
-                        else Num 0 NoSpan
+                        else Num 6 NoSpan

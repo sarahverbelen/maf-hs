@@ -1,1 +1,1 @@
-(letrec* ((q -27) (b (- (- (/ q (- q q)) q) (+ -2 (- (/ (+ 11 -20) q) q))))) (/ (begin (set! q b) (+ -2 28)) -13))
+(letrec* ((u 12)) (/ (begin (set! u -15) 21) (begin (set! u u) 13)))

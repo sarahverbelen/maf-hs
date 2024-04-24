@@ -155,4 +155,4 @@ prop_preserved_semantics p =
 main :: IO ()
 main = do 
   sample (arbitrary :: Gen Exp)
-  quickCheck prop_preserved_semantics
+  quickCheck (withMaxSuccess 500 prop_preserved_semantics)
