@@ -104,27 +104,39 @@ genBeginExp' vs n = do
   return $ (currExp : nextExps)
 
 
-genBinds :: Context -> Int -> Gen [(Ide, Exp)]
-genBinds _ 0 = return []
-genBinds vs n = do k <- choose (1, n)
-                   genBinds' vs k
+genBinds :: Bool -> Context -> Int -> Gen [(Ide, Exp)]
+genBinds _ _ 0 = return []
+genBinds recursive vs n = do k <- choose (1, n)
+                             if recursive 
+                                then genRecBinds vs k
+                                else genNonRecBinds vs k 
 
-genBinds' :: Context -> Int -> Gen [(Ide, Exp)]
-genBinds' _ 0 = return []
-genBinds' vs n = do 
+genRecBinds :: Context -> Int -> Gen [(Ide, Exp)]
+genRecBinds _ 0 = return []
+genRecBinds vs n = do 
   ide <- genFreshIde vs
   e <- genValExp vs (quot n 2)
-  nextBds <- genBinds (vs ++ [ide]) (quot n 2)
+  nextBds <- genRecBinds (vs ++ [ide]) (quot n 2)
   return $ (ide, e) : nextBds
+
+genNonRecBinds :: Context -> Int -> Gen [(Ide, Exp)]
+genNonRecBinds _ 0 = return []
+genNonRecBinds vs n = do 
+  ide <- genFreshIde vs
+  e <- genValExp vs (quot n 2)
+  nextBds <- genNonRecBinds vs (quot n 2)
+  return $ (ide, e) : nextBds  
 
 genLetExp :: Context -> Int -> Gen Exp 
 -- | generates lets
 genLetExp vs 0 = genSimpleExp vs
 genLetExp vs n = do 
-  binds <- genBinds vs (quot n 2)
+  recursive <- arbitrary
+  let possibleLets = if recursive then [Ltt, Lrr] else [Let, Ltt]
+  binds <- genBinds recursive vs (quot n 2)
   let newVs = vs ++ (map fst binds)
   body <- genValExp newVs (quot n 2); 
-  let' <- oneof $ map return [Ltt, Lrr] --[Let, Ltt, Ltr, Lrr] -- todo: fix non-recursive let bindings
+  let' <- oneof $ map return possibleLets
   return $ let' binds body NoSpan 
 
 instance Arbitrary Ide where 

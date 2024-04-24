@@ -240,7 +240,7 @@ labelIrrBinding ((var, exp), (Binding g lbl)) =
       let eLbl' = relabelIrrBindingExp eLbl
       s <- get
       let (b, s') = preserveWithSto s g (Set var exp NoSpan) 
-      put s'
+      if b then put s else put s'
       let v = getValue $ abstractEval exp s
       return $ BindingS v b eLbl' 
 

@@ -1,1 +1,1 @@
-(letrec* ((u 12)) (/ (begin (set! u -15) 21) (begin (set! u u) 13)))
+(let* ((y -20) (t 19)) (begin (set! y 26) (set! y t) -17))
