@@ -61,8 +61,8 @@ testLabeling = do
     putStrLn $ show $ labelSequence e criterion
     let irrLbls = labelIrrelevant e (labelSequence e criterion)
     putStrLn $ show $ irrLbls
-    let usedVars = findUsedVars e irrLbls (SkipU (getVars criterion))
-    putStrLn $ show $ usedVars
+    --let usedVars = findUsedVars e irrLbls (SkipU (getVars criterion))
+    --putStrLn $ show $ usedVars
     
 testSlicer :: IO ()
 testSlicer = do 

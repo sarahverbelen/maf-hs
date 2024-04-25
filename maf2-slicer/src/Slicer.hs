@@ -241,8 +241,9 @@ labelIrrBinding ((var, exp), (Binding g lbl)) =
       s <- get
       let (b, s') = preserveWithSto s g (Set var exp NoSpan) 
       if b then put s else put s'
+      let b' = not $ relevantBindingInExp eLbl'
       let v = getValue $ abstractEval exp s
-      return $ BindingS v b eLbl' 
+      return $ BindingS v (b && b') eLbl' 
 
 relabelIrrBindingExp :: ToSlice -> ToSlice 
 -- relabels the expression bound to a variable so that the return value is kept 

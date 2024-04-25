@@ -8,7 +8,7 @@ import Property.Agreement
 import Test.QuickCheck
 import qualified Data.Map as Map
 import Data.Maybe
-import Data.List ((\\), elem)
+import Data.List ((\\), elem, zipWith)
 
 -- generators
 
@@ -18,7 +18,7 @@ genLetter :: Gen Char
 genLetter = oneof $ map return ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
 
 genFreshVarName :: [String] -> Gen String 
-genFreshVarName vs = (listOf1 genLetter) `suchThat` (\nm -> not $ nm `elem` vs)
+genFreshVarName vs = (resize 6 $ listOf1 genLetter) `suchThat` (\nm -> not $ nm `elem` vs)
 
 genFreshIde :: Context -> Gen Ide
 genFreshIde vs = do 
@@ -45,7 +45,7 @@ genBoolExp [] _ = do b <- arbitrary; return $ Bln b NoSpan
 genBoolExp vs n = do 
   oneof [
     do b <- arbitrary; return $ Bln b NoSpan,
-    do (prim, args) <- genPrimitive boolPrimitives; ops <- vectorOf args (genValExp vs (quot n 2)); return $ App prim ops NoSpan
+    do (prim, args) <- genPrimitive boolPrimitives; ops <- vectorOf args (genSimpleExp vs); return $ App prim ops NoSpan
     ]
 
 genStatementExp :: Context -> Int -> Gen (Exp, Context)
@@ -139,11 +139,11 @@ genLetExp vs n = do
 instance Arbitrary Ide where 
   arbitrary = do
     name <- genFreshVarName []
-    return $ Ide name NoSpan
+    return $ Ide name NoSpan  
 
 instance Arbitrary Exp where 
   arbitrary =
-    resize 20 $ sized (genLetExp [])
+    resize 100 $ sized (genLetExp [])
 
 -- properties
 

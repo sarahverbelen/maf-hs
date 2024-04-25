@@ -44,10 +44,11 @@ shiftLabels' (Val g)                    = do    g' <- get; put g
                                                 return $ Val g'                                                
 shiftLabels' (Begin lbls)               = do    lbls' <- mapM shiftLabels' (reverse lbls)
                                                 return $ Begin (reverse lbls')
-shiftLabels' (Binding g lbl)            = do    lbl' <- shiftLabels' lbl
-                                                g'' <- get 
-                                                put g
-                                                return $ Binding g'' lbl'
+shiftLabels' (Binding g lbl)            = do    g' <- get
+                                                lbl' <- shiftLabels' lbl
+                                                g'' <- get
+                                                let newG = g' `union` g''
+                                                return $ Binding newG lbl'
 shiftLabels' (If gb lblC lblA)          = do    g <- get
                                                 lblC' <- shiftLabels' lblC; gc <- get; put g
                                                 lblA' <- shiftLabels' lblA; ga <- get;
