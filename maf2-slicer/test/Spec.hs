@@ -1,3 +1,5 @@
+module Spec where
+
 import Syntax.Scheme
 import Analysis.Scheme.Primitives
 
@@ -147,21 +149,23 @@ instance Arbitrary Exp where
 
 -- properties
 
+testSlice :: Exp -> Exp 
+testSlice e =   
+  let vsInExp = getVarsFromExp' e
+      var = head vsInExp -- todo: pick random var from expression to test?
+      criterion = [(var, PAll)]
+  in slice e criterion
+
+
 prop_preserved_semantics :: Exp -> Bool 
 prop_preserved_semantics p = 
   let e = fromJust $ parseString $ show p
       vsInExp = getVarsFromExp' e
-      var = head vsInExp -- todo: pick random var from expression to test?
-      criterion = [(var, PAll)]
-      e' = slice e criterion
+      var = head vsInExp
+      e' = testSlice e
       s = mempty
       (_, s1) = abstractEval' e s
       (_, s2) = abstractEval' e' s
       v1 = Map.lookup var s1 
       v2 = Map.lookup var s2 
   in if (null vsInExp) then True else v1 == v2 
-
-main :: IO ()
-main = do 
-  sample (arbitrary :: Gen Exp)
-  quickCheck (withMaxSuccess 100 prop_preserved_semantics)
