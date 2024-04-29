@@ -57,7 +57,7 @@ genStatementExp vs@(defined, initialized)  n = frequency [
   -- define
   --(1, do ide <- elements vs; e <- genValExp vs (quot n 2); return (Dfv ide e NoSpan, vs ++ [ide])),
   -- set 
-  (2, do ide <- elements initialized; e <- genValExp vs (quot n 2); return (Set ide e NoSpan, vs))
+  (2, do ide <- elements defined; e <- genValExp vs (quot n 2); return (Set ide e NoSpan, vs))
   ]
 
 genSimpleExp :: Context -> Gen Exp 
@@ -138,6 +138,22 @@ genLetExp vs@(defined, initialized) n = do
   body <- genValExp newVs (quot n 2); 
   let' <- oneof $ map return possibleLets
   return $ let' binds body NoSpan 
+
+countSets :: Exp -> Int 
+countSets (Iff b c a _) = countSets b + countSets c + countSets a
+countSets (Bgn es _) = foldr (\ a b -> b + countSets a) 0 es 
+countSets (Dfv _ e _) = countSets e 
+countSets (Dff _ _ e _) = countSets e 
+countSets (Set _ e _) = 1 + countSets e 
+countSets (Let bds bdy _) = foldr ((\ a b -> b + countSets a) . snd) 0 bds + countSets bdy
+countSets (Ltt bds bdy _) = foldr ((\ a b -> b + countSets a) . snd) 0 bds + countSets bdy 
+countSets (Ltr bds bdy _) = foldr ((\ a b -> b + countSets a) . snd) 0 bds + countSets bdy 
+countSets (Lrr bds bdy _) = foldr ((\ a b -> b + countSets a) . snd) 0 bds + countSets bdy 
+countSets (App op ops _) = countSets op + foldr (\ a b -> b + countSets a) 0 ops
+countSets _ = 0
+
+genExpManySets :: Gen Exp 
+genExpManySets = (arbitrary :: Gen Exp) `suchThat` (\e -> countSets e > 4)
 
 instance Arbitrary Ide where 
   arbitrary = do

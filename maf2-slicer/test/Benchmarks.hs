@@ -32,26 +32,34 @@ printSize e = do
     let diff = ((x - x') / x) * 100 
     putStrLn $ "decreased by " ++ show diff ++ "%"
 
-benchmark :: IO Double 
-benchmark = do 
-    e <- generate (arbitrary :: Gen Exp)
+benchmark :: Bool -> IO Double 
+benchmark manySets = do 
+    e <- generate (if manySets then genExpManySets else (arbitrary :: Gen Exp))
     i <- generate (arbitrary :: Gen Int)
     let e' = testSlice i e 
     let x = nodeCount e 
     let x' = nodeCount e'
     return $ ((x - x') / x) * 100
 
-benchmarks :: Double -> IO Double
-benchmarks 1 = benchmark 
-benchmarks i = do 
-    res <- benchmark 
-    rest <- benchmarks (i - 1)
+benchmarks' :: Bool -> Double -> IO Double
+benchmarks' b 1 = benchmark b
+benchmarks' b i = do 
+    res <- benchmark b
+    rest <- benchmarks' b (i - 1)
     return $ res + rest
 
-runBenchmarks :: Double -> IO Double
-runBenchmarks i = do 
-    res <- benchmarks i 
+benchmarks :: Bool -> Double -> IO Double
+benchmarks b i = do 
+    res <- benchmarks' b i 
     return $ res / i -- return the average percentage of decrease
+
+runBenchmarks :: IO ()
+runBenchmarks = do 
+    let i = 100
+    res <- benchmarks False i
+    res' <- benchmarks True i
+    putStrLn $ "after " ++ show i ++ " tests, programs get smaller by on average " ++ show res ++ "%"   
+    putStrLn $ "after " ++ show i ++ " tests, programs with many sets get smaller by on average " ++ show res' ++ "%"   
 
 testBenchmark :: IO ()
 testBenchmark = do 
