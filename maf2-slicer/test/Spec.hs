@@ -149,20 +149,20 @@ instance Arbitrary Exp where
 
 -- properties
 
-testSlice :: Exp -> Exp 
-testSlice e =   
+testSlice :: Int -> Exp -> Exp 
+testSlice i e =   
   let vsInExp = getVarsFromExp' e
-      var = head vsInExp -- todo: pick random var from expression to test?
+      var = vsInExp !! (i `mod` length vsInExp)
       criterion = [(var, PAll)]
   in slice e criterion
 
 
-prop_preserved_semantics :: Exp -> Bool 
-prop_preserved_semantics p = 
+prop_preserved_semantics :: Int -> Exp -> Bool 
+prop_preserved_semantics i p = 
   let e = fromJust $ parseString $ show p
       vsInExp = getVarsFromExp' e
-      var = head vsInExp
-      e' = testSlice e
+      var = vsInExp !! (i `mod` length vsInExp)
+      e' = testSlice i e
       s = mempty
       (_, s1) = abstractEval' e s
       (_, s2) = abstractEval' e' s

@@ -1,1 +1,1 @@
-(letrec* ((z -9) (c -26) (l (+ (/ (* -4 c) 27) z))) (if (< (begin (set! z (+ (if #t 18 -16) z)) (/ (+ z 27) (+ 15 10)) (set! c z) z) (/ 2 (- 5 l))) 7 -27))
+(letrec* ((gbo 20) (ex -30) (ca (let ((gt gbo)) (+ -3 -3))) (w (if #t (if #f 30 (/ (* (- 23 8) ex) ca)) ca)) (u (if #f ca ex)) (mglf -22)) gbo)

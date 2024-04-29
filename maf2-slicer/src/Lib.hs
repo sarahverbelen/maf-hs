@@ -64,13 +64,13 @@ testLabeling = do
     --let usedVars = findUsedVars e irrLbls (SkipU (getVars criterion))
     --putStrLn $ show $ usedVars
     
-testSlicer :: IO ()
-testSlicer = do 
+testSlicer :: Int -> IO ()
+testSlicer i = do 
       contents <- readFile testProgram 
       let e = fromJust $ parseString contents
       putStrLn $ show e
       let vsInExp = getVarsFromExp' e
-      let var = head vsInExp
+      let var = vsInExp !! (i `mod` length vsInExp)
       let criterion = [(var, PAll)]
       putStrLn $ show criterion 
       let e' = slice e criterion
