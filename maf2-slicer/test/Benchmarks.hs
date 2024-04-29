@@ -25,13 +25,33 @@ printSize e = do
     putStrLn $ show e 
     let x = nodeCount e
     putStrLn $ "size before slice: " ++ show x
-    let e' = testSlice 0 e
+    i <- generate (arbitrary :: Gen Int)
+    let e' = testSlice i e
     let x' = nodeCount e' 
     putStrLn $ "size after slice: " ++ show x'
     let diff = ((x - x') / x) * 100 
     putStrLn $ "decreased by " ++ show diff ++ "%"
 
+benchmark :: IO Double 
+benchmark = do 
+    e <- generate (arbitrary :: Gen Exp)
+    i <- generate (arbitrary :: Gen Int)
+    let e' = testSlice i e 
+    let x = nodeCount e 
+    let x' = nodeCount e'
+    return $ ((x - x') / x) * 100
 
+benchmarks :: Double -> IO Double
+benchmarks 1 = benchmark 
+benchmarks i = do 
+    res <- benchmark 
+    rest <- benchmarks (i - 1)
+    return $ res + rest
+
+runBenchmarks :: Double -> IO Double
+runBenchmarks i = do 
+    res <- benchmarks i 
+    return $ res / i -- return the average percentage of decrease
 
 testBenchmark :: IO ()
 testBenchmark = do 

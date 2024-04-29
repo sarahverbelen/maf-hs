@@ -1,1 +1,1 @@
-(letrec* ((gbo 20) (ex -30) (ca (let ((gt gbo)) (+ -3 -3))) (w (if #t (if #f 30 (/ (* (- 23 8) ex) ca)) ca)) (u (if #f ca ex)) (mglf -22)) gbo)
+(let* ((kj -22) (uzge kj) (ody (let* ((mvd (- uzge 29))) (if #t (+ -18 mvd) (/ mvd (* -18 mvd)))))) ody)

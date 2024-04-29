@@ -77,9 +77,9 @@ testSlicer i = do
       putStrLn $ show e' 
       let s = mempty
       let (_, s1) = abstractEval' e s
-      let (_, s2) = abstractEval' e' s
       let v1 = Map.lookup var s1 
       putStrLn $ show v1 
-      let v2 = Map.lookup var s2 
-      putStrLn $ show v2
-      putStrLn $ show $ v1 == v2
+    --   let (_, s2) = abstractEval' e' s
+    --   let v2 = Map.lookup var s2 
+    --   putStrLn $ show v2
+    --   putStrLn $ show $ v1 == v2

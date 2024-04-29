@@ -14,7 +14,7 @@ import Data.List ((\\), elem, zipWith)
 
 -- generators
 
-type Context = [Ide] -- the context contains all variables that are defined in the current environment
+type Context = ([Ide], [Ide]) -- (defined variables, initialized variables)
 
 genLetter :: Gen Char 
 genLetter = oneof $ map return ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
@@ -23,7 +23,7 @@ genFreshVarName :: [String] -> Gen String
 genFreshVarName vs = (resize 6 $ listOf1 genLetter) `suchThat` (\nm -> not $ nm `elem` vs)
 
 genFreshIde :: Context -> Gen Ide
-genFreshIde vs = do 
+genFreshIde (vs, _) = do 
   nm <- genFreshVarName (map name vs)
   return $ Ide nm NoSpan
 
@@ -43,7 +43,7 @@ genPrimitive primList = do
 genBoolExp :: Context -> Int -> Gen Exp 
 -- | generates expressions that return booleans
 genBoolExp _ 0  = do b <- arbitrary; return $ Bln b NoSpan
-genBoolExp [] _ = do b <- arbitrary; return $ Bln b NoSpan
+genBoolExp ([], []) _ = do b <- arbitrary; return $ Bln b NoSpan
 genBoolExp vs n = do 
   oneof [
     do b <- arbitrary; return $ Bln b NoSpan,
@@ -52,20 +52,20 @@ genBoolExp vs n = do
 
 genStatementExp :: Context -> Int -> Gen (Exp, Context)
 -- | generates expressions that don't necessarily have return values (aka cant be used as a right hand side of an assignment)
-genStatementExp [] _ = do e <- genValExp [] 0; return (e, [])
-genStatementExp vs n = frequency [ 
+genStatementExp vs@(_, []) _ = do e <- genValExp vs 0; return (e, vs)
+genStatementExp vs@(defined, initialized)  n = frequency [ 
   -- define
   --(1, do ide <- elements vs; e <- genValExp vs (quot n 2); return (Dfv ide e NoSpan, vs ++ [ide])),
   -- set 
-  (2, do ide <- elements vs; e <- genValExp vs (quot n 2); return (Set ide e NoSpan, vs))
+  (2, do ide <- elements initialized; e <- genValExp vs (quot n 2); return (Set ide e NoSpan, vs))
   ]
 
 genSimpleExp :: Context -> Gen Exp 
-genSimpleExp [] = do randNr <- choose (-30, 30); return $ Num randNr NoSpan
-genSimpleExp vs = frequency [
+genSimpleExp (_, []) = do randNr <- choose (-30, 30); return $ Num randNr NoSpan
+genSimpleExp vs@(defined, initialized) = frequency [
       (3, do randNr <- choose (-30, 30); return $ Num randNr NoSpan),
       -- (2, do randNr <- choose (-30, 30); return $ Rea randNr NoSpan),
-      (2, do ide <- elements vs; return $ Var ide),
+      (2, do ide <- elements initialized; return $ Var ide),
       (2, do (prim, args) <- genPrimitive numPrimitives; ops <- vectorOf args (genSimpleExp vs); return $ App prim ops NoSpan)
       ] 
 
@@ -112,28 +112,29 @@ genBinds recursive vs n = do k <- choose (1, n)
 
 genRecBinds :: Context -> Int -> Gen [(Ide, Exp)]
 genRecBinds _ 0 = return []
-genRecBinds vs n = do 
+genRecBinds vs@(defined, initialized) n = do 
   ide <- genFreshIde vs
   e <- genValExp vs (quot n 2)
-  nextBds <- genRecBinds (vs ++ [ide]) (quot n 2)
+  nextBds <- genRecBinds (ide:defined, initialized) (quot n 2)
   return $ (ide, e) : nextBds
 
 genNonRecBinds :: Context -> Int -> Gen [(Ide, Exp)]
 genNonRecBinds _ 0 = return []
-genNonRecBinds vs n = do 
+genNonRecBinds vs@(defined, initialized) n = do 
   ide <- genFreshIde vs
   e <- genValExp vs (quot n 2)
-  nextBds <- genNonRecBinds vs (quot n 2)
+  nextBds <- genNonRecBinds (ide:defined, initialized) (quot n 2)
   return $ (ide, e) : nextBds  
 
 genLetExp :: Context -> Int -> Gen Exp 
 -- | generates lets
 genLetExp vs 0 = genSimpleExp vs
-genLetExp vs n = do 
+genLetExp vs@(defined, initialized) n = do 
   recursive <- arbitrary
   let possibleLets = if recursive then [Ltt, Lrr] else [Let, Ltt]
   binds <- genBinds recursive vs (quot n 2)
-  let newVs = vs ++ (map fst binds)
+  let ides = map fst binds
+  let newVs = (defined ++ ides, initialized ++ ides)
   body <- genValExp newVs (quot n 2); 
   let' <- oneof $ map return possibleLets
   return $ let' binds body NoSpan 
@@ -145,7 +146,7 @@ instance Arbitrary Ide where
 
 instance Arbitrary Exp where 
   arbitrary =
-    resize 100 $ sized (genLetExp [])
+    resize 100 $ sized (genLetExp ([], []))
 
 -- properties
 
