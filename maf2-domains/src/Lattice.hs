@@ -11,7 +11,8 @@ module Lattice (
   module Lattice.SetLattice,
   module Lattice.TopLiftedLattice,
   module Lattice.UnitLattice,
-  module Lattice.SignLattice
+  module Lattice.SignLattice,
+  module Lattice.ParityLattice
 ) where
 
 import Lattice.Class
@@ -27,3 +28,4 @@ import Lattice.SetLattice
 import Lattice.TopLiftedLattice
 import Lattice.UnitLattice
 import Lattice.SignLattice
+import Lattice.ParityLattice

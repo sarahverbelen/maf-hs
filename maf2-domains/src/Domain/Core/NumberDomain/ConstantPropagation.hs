@@ -6,6 +6,8 @@ module Domain.Core.NumberDomain.ConstantPropagation where
 import Lattice 
 import Domain.Core.NumberDomain.Class 
 import Domain.Core.BoolDomain.ConstantPropagation () -- for CP Bool instance
+import Domain.Class
+
 
 import Control.Applicative
 import Control.Monad.DomainError
@@ -78,3 +80,46 @@ instance RealDomain (CP Double) where
    sqrt a =
       domain (fmap (< 0) a) InvalidArgument <||>
       return (fmap Prelude.sqrt a)
+
+newtype CPDouble' i = CPDouble' { getCPD :: CP Double }
+                        deriving (Eq, Ord, Show, JoinLattice, Joinable)
+
+instance Domain (CPDouble' i) Double where 
+   inject = CPDouble' . Constant                        
+
+instance NumberDomain (CPDouble' i) where
+   type Boo (CPDouble' i) = CP Bool
+   isZero a = return (liftA2 (==) (Constant 0) (getCPD a))
+   random _ = return $ CPDouble' Top
+   plus (CPDouble' a) (CPDouble' b) = return $ CPDouble' (liftA2 (+) a b)
+   minus (CPDouble' a) (CPDouble' b) = return $ CPDouble' (liftA2 (-) a b)
+   times (CPDouble' a) (CPDouble' b) = return $ CPDouble' (liftA2 (*) a b)
+   div (CPDouble' a) (CPDouble' b) = return $ CPDouble' (liftA2 (/) a b)
+   expt (CPDouble' a) (CPDouble' b) = return $ CPDouble' (liftA2 (**) a b)
+   lt (CPDouble' a) (CPDouble' b) = return $ liftA2 (<) a b 
+   eq (CPDouble' a) (CPDouble' b) = return $ liftA2 (==) a b
+
+instance (IntDomain i) => RealDomain (CPDouble' i) where
+   type IntR (CPDouble' i) = i
+   toInt _ = return intTop
+   ceiling a = return $ CPDouble' (fmap (fromIntegral . Prelude.ceiling) (getCPD a))
+   floor a = return $ CPDouble' (fmap (fromIntegral . Prelude.floor) (getCPD a))
+   round a = return $ CPDouble' (fmap (fromIntegral . Prelude.round) (getCPD a))
+   log a =
+      domain (fmap (<= 0) (getCPD a)) InvalidArgument <||> return (CPDouble' (fmap Prelude.log (getCPD a)))
+   sin a = return $ CPDouble' (fmap Prelude.sin (getCPD a))
+   asin a =
+      domain (fmap (between (-1) 1) (getCPD a)) InvalidArgument <||>
+      return (CPDouble' (fmap Prelude.asin (getCPD a)))
+   cos a = return $ CPDouble' (fmap Prelude.cos (getCPD a))
+   acos a =
+      domain (fmap (between (-1) 1) (getCPD a)) InvalidArgument <||>
+      return (CPDouble' (fmap Prelude.acos (getCPD a)))
+   tan a = return $ CPDouble' (fmap Prelude.tan (getCPD a))
+   atan a = return $ CPDouble' (fmap Prelude.atan (getCPD a))
+   sqrt a =
+      domain (fmap (< 0) (getCPD a)) InvalidArgument <||>
+      return (CPDouble' (fmap Prelude.sqrt (getCPD a)))     
+
+instance TopLattice (CPDouble' i) where 
+   top = CPDouble' Top      

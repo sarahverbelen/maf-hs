@@ -1,1 +1,11 @@
-(let* ((kj -22) (uzge kj) (ody (let* ((mvd (- uzge 29))) (if #t (+ -18 mvd) (/ mvd (* -18 mvd)))))) ody)
+(define a 8)
+(define b 0)
+(define c a)
+(begin (+ a b)
+       (set! a 7))
+(define d 2)
+(define x (* c 0))
+(begin a
+b
+c
+d)

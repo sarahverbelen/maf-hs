@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts, UndecidableInstances, MultiParamTypeClasses, FunctionalDependencies, FlexibleInstances #-}
+{-# LANGUAGE FlexibleContexts, UndecidableInstances, MultiParamTypeClasses, FunctionalDependencies, FlexibleInstances, OverlappingInstances #-}
 
 module Dependency.Lattice where 
 
@@ -23,13 +23,20 @@ instance AtomicLattice Sign where
     atom Neg = True 
     atom _ = False  
 
+instance AtomicLattice Parity where 
+    atom Even = True 
+    atom Odd = True 
+    atom _ = False
 
 instance (AtomicLattice a) => AtomicLattice (Maybe a) where 
     atom (Just x) = atom x
     atom Nothing = False
 
 instance (AtomicLattice a) => AtomicLattice (CPChar' a) where 
-    atom (CPChar' x) = atom x         
+    atom (CPChar' x) = atom x    
+
+instance (AtomicLattice a) => AtomicLattice (CPDouble' a) where 
+    atom (CPDouble' x) = atom x             
 
 class (TopLattice v) => RefinableLattice v where 
 -- | refine returns a list of all elements that are immediate predecessors   
@@ -47,17 +54,31 @@ instance RefinableLattice Sign where
     refine ZeroOrPos = [Zero, Pos]
     refine _ = [SBottom]
 
+instance RefinableLattice Parity where 
+    refine PBottom = []
+    refine PTop = [Even, Odd] 
+    refine _ = [PBottom]
+
+instance RefinableLattice (CP Double) where 
+    refine Bottom = []
+    refine (Constant _) = [Bottom]
+    refine Top = [Constant i | i <- [-100..100]] -- pretend that a double is ""bounded""
+
 instance (RefinableLattice a) => RefinableLattice (Maybe a) where 
     refine (Just x) = [Just a | a <- refine x]
     refine Nothing = []  
 
 instance (RefinableLattice a) => RefinableLattice (CPChar' a) where 
     refine (CPChar' x) = [CPChar' a | a <- refine x]
+
+instance (RefinableLattice a) => RefinableLattice (CPDouble' a) where 
+    refine (CPDouble' x) = [CPDouble' a | a <- refine x]    
  
 instance (TopLattice a) => TopLattice (Maybe a) where 
     top = Just top 
 
-type V = SignValue () Ide Exp
+-- type V = SignValue () Ide Exp
+type V = ParityValue () Ide Exp 
 
 instance Address Ide
 instance Address ()
@@ -104,12 +125,22 @@ instance (Num i) => DummyValue Sign i where
     dummyValue Neg = -2
     dummyValue _ = 3
 
+instance (Num i) => DummyValue Parity i where 
+    dummyValue Even = 2 
+    dummyValue Odd = 1 
+    dummyValue _ = 0
 
 instance (DummyValue a c) => DummyValue (CP a) c where 
     dummyValue (Constant v) = dummyValue v 
 
 instance DummyValue Bool Bool where 
     dummyValue b = b
+
+instance DummyValue Double Double where 
+    dummyValue b = b
+
+instance DummyValue (CPDouble' i) Double where 
+    dummyValue (CPDouble' v) = dummyValue v
 
 instance (DummyValue a c) => DummyValue (Maybe a) c where 
     dummyValue (Just v) = dummyValue v
