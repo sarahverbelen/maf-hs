@@ -57,7 +57,7 @@ genStatementExp vs@(defined, initialized)  n = frequency [
   -- define
   --(1, do ide <- elements vs; e <- genValExp vs (quot n 2); return (Dfv ide e NoSpan, vs ++ [ide])),
   -- set 
-  (2, do ide <- elements defined; e <- genValExp vs (quot n 2); return (Set ide e NoSpan, vs))
+  (2, do ide <- elements initialized; e <- genValExp vs (quot n 2); return (Set ide e NoSpan, vs))
   ]
 
 genSimpleExp :: Context -> Gen Exp 

@@ -41,25 +41,27 @@ benchmark manySets = do
     let x' = nodeCount e'
     return $ ((x - x') / x) * 100
 
-benchmarks' :: Bool -> Double -> IO Double
-benchmarks' b 1 = benchmark b
+benchmarks' :: Bool -> Double -> IO [Double]
+benchmarks' b 1 = do r <- benchmark b; return [r]
 benchmarks' b i = do 
     res <- benchmark b
     rest <- benchmarks' b (i - 1)
-    return $ res + rest
+    return $ res : rest
 
-benchmarks :: Bool -> Double -> IO Double
+benchmarks :: Bool -> Double -> IO (Double, Double)
 benchmarks b i = do 
-    res <- benchmarks' b i 
-    return $ res / i -- return the average percentage of decrease
+    vals <- benchmarks' b i 
+    let average = (foldr (+) 0 vals) / i
+    let std = sqrt $ (foldr (\x s -> s +  ((x - average) ^ 2)) 0 vals) / (i - 1) -- sample standard deviation
+    return $ (average, std)
 
 runBenchmarks :: IO ()
 runBenchmarks = do 
     let i = 100
-    res <- benchmarks False i
-    res' <- benchmarks True i
-    putStrLn $ "after " ++ show i ++ " tests, programs get smaller by on average " ++ show res ++ "%"   
-    putStrLn $ "after " ++ show i ++ " tests, programs with many sets get smaller by on average " ++ show res' ++ "%"   
+    (av, std) <- benchmarks False i
+    (av', std') <- benchmarks True i
+    putStrLn $ "after " ++ show i ++ " tests, programs get smaller by on average " ++ show av ++ "%, with a standard deviation of " ++ show std ++ "%"
+    putStrLn $ "after " ++ show i ++ " tests, programs with many sets get smaller by on average " ++ show av' ++ "%, with a standard deviation of " ++ show std' ++ "%"
 
 testBenchmark :: IO ()
 testBenchmark = do 
