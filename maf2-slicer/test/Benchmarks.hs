@@ -68,7 +68,7 @@ encodeData :: Exp -> Double -> String -> Exp -> Double -> String
 encodeData e x v e' x' = show e ++ ";" ++ show x ++ ";" ++ v ++ ";" ++ show e' ++ ";" ++ show x' ++ "\n"
 
 benchmarksToCsv :: Bool -> String -> Int -> IO ()
-benchmarksToCsv _ _ 0 = putStrLn "done"
+benchmarksToCsv _ file 0 = putStrLn $ file ++ " done"
 benchmarksToCsv manySets file i = do 
     e <- generate (if manySets then sized genExpManySets else (arbitrary :: Gen Exp))
     n <- generate (arbitrary :: Gen Int)

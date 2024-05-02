@@ -77,8 +77,8 @@ instance (RefinableLattice a) => RefinableLattice (CPDouble' a) where
 instance (TopLattice a) => TopLattice (Maybe a) where 
     top = Just top 
 
--- type V = SignValue () Ide Exp
-type V = ParityValue () Ide Exp 
+type V = SignValue () Ide Exp
+-- type V = ParityValue () Ide Exp 
 
 instance Address Ide
 instance Address ()
