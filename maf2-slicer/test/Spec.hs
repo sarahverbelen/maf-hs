@@ -152,8 +152,8 @@ countSets (Lrr bds bdy _) = foldr ((\ a b -> b + countSets a) . snd) 0 bds + cou
 countSets (App op ops _) = countSets op + foldr (\ a b -> b + countSets a) 0 ops
 countSets _ = 0
 
-genExpManySets :: Gen Exp 
-genExpManySets = (arbitrary :: Gen Exp) `suchThat` (\e -> countSets e > 4)
+genExpManySets :: Int -> Gen Exp 
+genExpManySets i = (genLetExp ([], []) i) `suchThat` (\e -> countSets e > 1)
 
 instance Arbitrary Ide where 
   arbitrary = do
@@ -162,17 +162,22 @@ instance Arbitrary Ide where
 
 instance Arbitrary Exp where 
   arbitrary =
-    resize 100 $ sized (genLetExp ([], []))
+    resize 30 $ sized genExpManySets
+    -- resize 30 $ sized (genLetExp ([], []))
 
 -- properties
 
 testSlice :: Int -> Exp -> Exp 
 testSlice i e =   
-  let vsInExp = getVarsFromExp' e
-      var = vsInExp !! (i `mod` length vsInExp)
+  let var = testVar i e
       criterion = [(var, PAll)]
   in slice e criterion
 
+
+testVar :: Int -> Exp -> String
+testVar i e = 
+  let vsInExp = getVarsFromExp' e
+  in vsInExp !! (i `mod` length vsInExp)
 
 prop_preserved_semantics :: Int -> Exp -> Bool 
 prop_preserved_semantics i p = 

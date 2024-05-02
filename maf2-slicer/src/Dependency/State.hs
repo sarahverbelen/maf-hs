@@ -85,7 +85,7 @@ abstractStateToSto s = Map.mapKeys name s
 abstractEval' :: Exp -> AbstractSto V -> (Value, AbstractSto V)
 -- | version of abstractEval that also returns the updated store
 abstractEval' e s = (v, abstractStateToSto $ values sto') 
-       where  (v, sto') = analyze'' (e, env, (), Ghost) $ sto
+       where  (v, sto') = analyze'' (e, env, (), Ghost) sto
               s' = abstractStoToState $ extendStateForExp e s
               env = abstractStateToEnv s'
               sto = fromValues $ Map.union (abstractStoToState s) (initialSto env)

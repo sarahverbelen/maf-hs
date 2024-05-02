@@ -55,12 +55,13 @@ testLabeling = do
     let vsInExp = getVarsFromExp' e
     let var = head vsInExp
     let criterion = [(var, PAll)]
+    putStrLn $ show criterion
     -- putStrLn $ show e
     -- let e' =  slice e criterion
     -- putStrLn $ show e' 
     putStrLn $ show $ labelSequence e criterion
-    let irrLbls = labelIrrelevant e (labelSequence e criterion)
-    putStrLn $ show $ irrLbls
+    -- let irrLbls = labelIrrelevant e (labelSequence e criterion)
+    -- putStrLn $ show $ irrLbls
     --let usedVars = findUsedVars e irrLbls (SkipU (getVars criterion))
     --putStrLn $ show $ usedVars
     
@@ -79,7 +80,7 @@ testSlicer i = do
       let (_, s1) = abstractEval' e s
       let v1 = Map.lookup var s1 
       putStrLn $ show v1 
-    --   let (_, s2) = abstractEval' e' s
-    --   let v2 = Map.lookup var s2 
-    --   putStrLn $ show v2
-    --   putStrLn $ show $ v1 == v2
+      let (_, s2) = abstractEval' e' s
+      let v2 = Map.lookup var s2 
+      putStrLn $ show v2
+      putStrLn $ show $ v1 == v2

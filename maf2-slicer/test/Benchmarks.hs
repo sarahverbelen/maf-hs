@@ -34,7 +34,7 @@ printSize e = do
 
 benchmark :: Bool -> IO Double 
 benchmark manySets = do 
-    e <- generate (if manySets then genExpManySets else (arbitrary :: Gen Exp))
+    e <- generate (if manySets then sized genExpManySets else (arbitrary :: Gen Exp))
     i <- generate (arbitrary :: Gen Int)
     let e' = testSlice i e 
     let x = nodeCount e 
@@ -58,10 +58,31 @@ benchmarks b i = do
 runBenchmarks :: IO ()
 runBenchmarks = do 
     let i = 100
-    (av, std) <- benchmarks False i
-    (av', std') <- benchmarks True i
-    putStrLn $ "after " ++ show i ++ " tests, programs get smaller by on average " ++ show av ++ "%, with a standard deviation of " ++ show std ++ "%"
-    putStrLn $ "after " ++ show i ++ " tests, programs with many sets get smaller by on average " ++ show av' ++ "%, with a standard deviation of " ++ show std' ++ "%"
+    (av, std) <- benchmarks False i -- random programs
+    (av', std') <- benchmarks True i -- programs with a guaranteed minimum nr of set!'s
+    putStrLn $ "after " ++ show i ++ " tests, programs get smaller by on average " ++ show av ++ "%" ++ ", with a standard deviation of " ++ show std ++ "%"
+    putStrLn $ "after " ++ show i ++ " tests, programs with many sets get smaller by on average " ++ show av' ++ "%" ++ ", with a standard deviation of " ++ show std' ++ "%"
+
+
+encodeData :: Exp -> Double -> String -> Exp -> Double -> String 
+encodeData e x v e' x' = show e ++ ";" ++ show x ++ ";" ++ v ++ ";" ++ show e' ++ ";" ++ show x' ++ "\n"
+
+benchmarksToCsv :: Bool -> String -> Int -> IO ()
+benchmarksToCsv _ _ 0 = putStrLn "done"
+benchmarksToCsv manySets file i = do 
+    e <- generate (if manySets then sized genExpManySets else (arbitrary :: Gen Exp))
+    n <- generate (arbitrary :: Gen Int)
+    let var = testVar n e
+    let e' = testSlice n e 
+    let x = nodeCount e 
+    let x' = nodeCount e'
+    appendFile file $ encodeData e x var e' x'
+    benchmarksToCsv manySets file (i - 1)
+    
+createBenchmarkCsv :: Bool -> String -> IO ()
+createBenchmarkCsv manySets filename = do 
+    writeFile filename "expression; size; sliced on; sliced expression; sliced size\n"
+    benchmarksToCsv manySets filename 100
 
 testBenchmark :: IO ()
 testBenchmark = do 

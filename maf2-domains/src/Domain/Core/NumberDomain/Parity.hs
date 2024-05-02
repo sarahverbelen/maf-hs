@@ -37,7 +37,6 @@ instance NumberDomain Parity where
 
     div PBottom _ = return PBottom 
     div _ PBottom = return PBottom 
-    div Odd Odd = return Odd
     div _ _ = return PTop
 
     expt PBottom _ = return PBottom

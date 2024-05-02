@@ -62,7 +62,7 @@ instance RefinableLattice Parity where
 instance RefinableLattice (CP Double) where 
     refine Bottom = []
     refine (Constant _) = [Bottom]
-    refine Top = [Constant i | i <- [-100..100]] -- pretend that a double is ""bounded""
+    refine Top = [Constant i | i <- [-13, -10, -9, -5.5, 0, 5.5, 6, 42, 10, 7, 13]] -- pretend that a double is ""bounded""
 
 instance (RefinableLattice a) => RefinableLattice (Maybe a) where 
     refine (Just x) = [Just a | a <- refine x]

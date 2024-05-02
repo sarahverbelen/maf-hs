@@ -11,6 +11,7 @@ import Dependency.Lattice
 import Dependency.Dependency
 
 import Syntax.Scheme.AST
+import Lattice
 import Control.Monad.State
 
 import Data.List (union, delete)
@@ -103,14 +104,14 @@ labelLet bds bdy = do lblBody <- labelExp bdy -- label the body
 -- | G-ASSIGN
 labelBinding :: (Ide, Exp) -> LabelState
 labelBinding (var, e) = do  (sto, g) <- get
-                            eLbl <- labelBindingExp var e 
+                            eLbl <- labelBindingExp var e
                             -- if the assigned variable is in the agreement
                             -- then the new agreement contains all variables that this expression is dependent on + all of the previous ones except the current one being assigned
                             let g' = if (name var) `elem` (map fst g) then union (deleteFromAL (name var) g) $ findNDeps e (lookup (name var) g) (extendStateForExp e sto) else g
                             -- else the agreement stays the same
-                            let (v, sto') = abstractEval' (Set var e NoSpan) sto
+                            --let (_, sto') = abstractEval' (Set var e NoSpan) sto
                             -- update the state
-                            put (sto', g')
+                            put (sto, g')
                             return (Binding g' eLbl)         
 
 -- | G-APP * (assuming the procedure is a primitive)

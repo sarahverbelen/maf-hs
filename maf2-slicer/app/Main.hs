@@ -7,4 +7,4 @@ main :: IO ()
 main = do
     testLabeling
     putStrLn ""
-    testSlicer 2
+    testSlicer 0

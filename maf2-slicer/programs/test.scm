@@ -1,11 +1,1 @@
-(define a 8)
-(define b 0)
-(define c a)
-(begin (+ a b)
-       (set! a 7))
-(define d 2)
-(define x (* c 0))
-(begin a
-b
-c
-d)
+(let ((ixzsi (let ((gagj 15)) (begin (set! gagj -9) (set! gagj gagj) (/ 11 (+ 11 gagj))))) (kzxvzp 1) (jaddk -30) (vyuefa (* 10 15)) (aion (if #f -21 30)) (sak -23)) (begin (set! aion (let ((th (/ (- 4 -10) ixzsi))) (* (/ aion th) -20))) (set! sak (- (begin (set! kzxvzp -4) kzxvzp) (/ (* 19 ixzsi) 9))) (begin (set! vyuefa -3) -30) (* (* vyuefa ixzsi) 6) -7 (+ -14 (- (- sak -6) vyuefa))))
