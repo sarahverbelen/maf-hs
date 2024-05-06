@@ -41,9 +41,22 @@ sliceBool (SkipS b)      = b
 sliceBool (BeginS b _)   = b
 sliceBool (AppS b _)     = b 
 
-dummyExp :: V -> Span -> Exp 
-dummyExp v s = App (Var (Ide "dummy" s)) [dummyValue v] NoSpan
+dummyExp :: Exp -> V -> Span -> Exp 
+dummyExp e v s = 
+   if simpleExp e 
+      then e 
+      else App (Var (Ide "dummy" s)) [dummyValue v] NoSpan
  
+simpleExp :: Exp -> Bool 
+simpleExp (Num _ _) = True
+simpleExp (Rea _ _) = True
+simpleExp (Str _ _) = True
+simpleExp (Sym _ _) = True
+simpleExp (Cha _ _) = True
+simpleExp (Bln _ _) = True
+simpleExp (Nll _) = True
+simpleExp _ = False
+
 -- | SLICING PASS (front to back)
 -- takes the information from the used variables and the irrelevant expressions to slice away irrelevant expressions that don't define a used variable.
 
@@ -86,7 +99,7 @@ sliceBinds (bd:bds) (l@(BindingS val _ eLbl):toslice) ((BindingU vars varsE):use
          then nextBds -- slice the binding completely
          else if (b == Nothing) 
             then [(var, e')] ++ nextBds -- keep the binding
-            else [(var, dummyExp val (spanOf e))] ++ nextBds -- dummify the binding        
+            else [(var, dummyExp e val (spanOf e))] ++ nextBds -- dummify the binding        
 
 sliceBind :: (Ide, Exp) -> ToSlice -> [String] -> Maybe Bool 
 sliceBind bd (BindingS _ False _) vars = Nothing -- this binding is necessary
@@ -104,7 +117,7 @@ sliceAssignment var e s set (BindingS val True _) used =
    let def' = if set then Set else Dfv
        vars = getUsedVars used
    in if ((name var) `elem` vars) && (not set)
-         then def' var (dummyExp val (spanOf e)) s
+         then def' var (dummyExp e val (spanOf e)) s
          else Nll s
 
 sliceBegin :: [Exp] -> Span -> ToSlice -> UsedVars -> Exp

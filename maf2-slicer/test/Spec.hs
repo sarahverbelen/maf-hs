@@ -162,8 +162,8 @@ instance Arbitrary Ide where
 
 instance Arbitrary Exp where 
   arbitrary =
-    resize 30 $ sized genExpManySets
-    -- resize 30 $ sized (genLetExp ([], []))
+    -- resize 30 $ sized genExpManySets
+    resize 30 $ sized (genLetExp ([], []))
 
 -- properties
 
