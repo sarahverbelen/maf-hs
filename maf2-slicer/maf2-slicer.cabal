@@ -43,6 +43,7 @@ library
   build-depends:
       QuickCheck
     , base >=4.7 && <5
+    , clock
     , containers
     , extra
     , maf2-analysis
@@ -50,6 +51,7 @@ library
     , maf2-syntax
     , maf2-typelevel
     , monads-tf
+    , text
     , transformers
   default-language: Haskell2010
 
@@ -65,6 +67,7 @@ executable maf2-slicer-exe
   build-depends:
       QuickCheck
     , base >=4.7 && <5
+    , clock
     , containers
     , extra
     , maf2-analysis
@@ -73,6 +76,7 @@ executable maf2-slicer-exe
     , maf2-syntax
     , maf2-typelevel
     , monads-tf
+    , text
     , transformers
   default-language: Haskell2010
 
@@ -91,6 +95,7 @@ test-suite maf2-slicer-test
   build-depends:
       QuickCheck
     , base >=4.7 && <5
+    , clock
     , containers
     , extra
     , maf2-analysis
@@ -99,5 +104,6 @@ test-suite maf2-slicer-test
     , maf2-syntax
     , maf2-typelevel
     , monads-tf
+    , text
     , transformers
   default-language: Haskell2010

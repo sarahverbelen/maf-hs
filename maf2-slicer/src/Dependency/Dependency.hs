@@ -58,6 +58,9 @@ findNDeps e (Just p) s =
     in vars \\ nonDep
 findNDeps _ Nothing _ = error "no property given to find dependencies"
 
+-- findNDeps :: Exp -> (Maybe Property) -> AbstractSto V -> Deps -- dependencies for a concrete slices
+-- findNDeps e _ _ = map (\a -> (a, PAll)) $ getVarsFromExp' e
+
 prove :: Exp -> AbstractSto V -> [(String, Property)] -> Property -> Deps 
 prove e s xs p = evalState (prove' e s xs p) []
 
