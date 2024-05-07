@@ -18,7 +18,7 @@ appendData s e i t = s ++ ";" ++ show e ++ ";" ++ show i ++ ";" ++ show t ++ "\n
 benchmark :: Exp -> Int -> IO (Exp, Int) 
 benchmark e n = do
     let var = testVar n e 
-    let e' = testSlice n e 
+    let e' = concreteTestSlice n e 
     let x = nodeCount e' 
     return (e', x)
 
@@ -43,7 +43,7 @@ updateBenchmarkCsv filename = do
     contents <- readFile filename 
     putStrLn contents -- force the contents to be read completely so we can write to the file
     let (h:dataLines) = lines contents
-    let newH = h ++ "; parity slice; parity size; parity time \n"
+    let newH = h ++ "; concrete slice; concrete size; concrete time \n"
     writeFile filename newH 
     mapM_ (updateBenchmark filename) dataLines
     putStrLn $ "done updating " ++ filename 
