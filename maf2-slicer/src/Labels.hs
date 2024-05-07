@@ -2,7 +2,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 
-module Labels(labelSequence, Labels(..), isSkip, isVal) where 
+module Labels where 
 
 import Property.Agreement 
 import Property.Preservation
@@ -12,8 +12,8 @@ import Dependency.Dependency
 
 import Syntax.Scheme.AST
 import Lattice
-import Control.Monad.State
 
+import Control.Monad.State
 import Data.List (union, delete)
 import qualified Data.Map as Map
 

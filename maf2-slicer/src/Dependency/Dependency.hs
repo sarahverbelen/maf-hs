@@ -49,15 +49,12 @@ noDep p (x, px) e sto =
                 else and (map (noDep' p e) stos)
     in b || b' 
 
--- findNDeps :: Exp -> (Maybe Property) -> AbstractSto V -> Deps 
--- findNDeps e (Just p) s = 
---     let vars =  map (\a -> (a, PAll)) $ getVarsFromExp' e 
---         nonDep = prove e s vars p 
---     in vars \\ nonDep
--- findNDeps _ Nothing _ = error "no property given to find dependencies"
-
-findNDeps :: Exp -> (Maybe Property) -> AbstractSto V -> Deps -- dependencies for a concrete slices
-findNDeps e _ _ = map (\a -> (a, PAll)) $ getVarsFromExp' e
+findNDeps :: Exp -> (Maybe Property) -> AbstractSto V -> Deps 
+findNDeps e (Just p) s = 
+    let vars =  map (\a -> (a, PAll)) $ getVarsFromExp' e 
+        nonDep = prove e s vars p 
+    in vars \\ nonDep
+findNDeps _ Nothing _ = error "no property given to find dependencies"
 
 prove :: Exp -> AbstractSto V -> [(String, Property)] -> Property -> Deps 
 prove e s xs p = evalState (prove' e s xs p) []

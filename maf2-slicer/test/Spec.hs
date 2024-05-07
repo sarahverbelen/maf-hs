@@ -12,6 +12,8 @@ import qualified Data.Map as Map
 import Data.Maybe
 import Data.List ((\\), elem, zipWith)
 
+import qualified Concrete.Slicer as Concrete
+
 -- generators
 
 type Context = ([Ide], [Ide]) -- (defined variables, initialized variables)
@@ -185,6 +187,11 @@ testSlice i e =
       criterion = [(var, PAll)]
   in slice e criterion
 
+concreteTestSlice :: Int -> Exp -> Exp 
+concreteTestSlice i e =   
+  let var = testVar i e
+      criterion = [(var, PAll)]
+  in Concrete.slice e criterion
 
 testVar :: Int -> Exp -> String
 testVar i e = 
@@ -197,6 +204,20 @@ prop_preserved_semantics i p =
       vsInExp = getVarsFromExp' e
       var = vsInExp !! (i `mod` length vsInExp)
       e' = testSlice i e
+      s = mempty
+      (_, s1) = abstractEval' e s
+      (_, s2) = abstractEval' e' s
+      v1 = Map.lookup var s1 
+      v2 = Map.lookup var s2 
+  in if (null vsInExp) then True else v1 == v2 
+
+
+prop_preserved_semantics_concrete :: Int -> Exp -> Bool 
+prop_preserved_semantics_concrete i p = 
+  let e = fromJust $ parseString $ show p
+      vsInExp = getVarsFromExp' e
+      var = vsInExp !! (i `mod` length vsInExp)
+      e' = concreteTestSlice i e
       s = mempty
       (_, s1) = abstractEval' e s
       (_, s2) = abstractEval' e' s

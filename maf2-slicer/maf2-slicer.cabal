@@ -25,6 +25,7 @@ source-repository head
 
 library
   exposed-modules:
+      Concrete.Slicer
       Dependency.Dependency
       Dependency.Lattice
       Dependency.State

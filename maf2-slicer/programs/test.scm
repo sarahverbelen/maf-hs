@@ -1,1 +1,1 @@
-(letrec* ((lguiz 18)) (begin (set! lguiz -26) -9 (set! lguiz lguiz) (/ (* 26 0) lguiz)))
+(let* ((x (/ -15 -7)) (d (- 7 11)) (h 16) (p -24)) (begin (set! d x) (set! x (* x d)) d 0))

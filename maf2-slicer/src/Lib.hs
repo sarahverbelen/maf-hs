@@ -15,6 +15,8 @@ import Syntax.Scheme.AST
 import Syntax.Scheme
 import Slicer
 
+import qualified Concrete.Slicer as Concrete
+
 -- import Analysis.Scheme.Primitives
 import Domain (inject)
 
@@ -84,3 +86,15 @@ testSlicer i = do
       let v2 = Map.lookup var s2 
       putStrLn $ show v2
       putStrLn $ show $ v1 == v2
+
+
+compareWithConcrete :: IO ()
+compareWithConcrete = do 
+    contents <- readFile testProgram 
+    let e = fromJust $ parseString contents 
+    let concreteE = Concrete.slice e testX
+    let abstractE = slice e testX
+    putStrLn "concrete slice: "
+    putStrLn $ show concreteE 
+    putStrLn "abstract slice: "
+    putStrLn $ show abstractE    

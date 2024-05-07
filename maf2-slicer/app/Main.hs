@@ -5,6 +5,7 @@ import Lib
 
 main :: IO ()
 main = do
-    testLabeling
-    putStrLn ""
-    testSlicer 0
+    -- testLabeling
+    --putStrLn ""
+    --testSlicer 0
+    compareWithConcrete
