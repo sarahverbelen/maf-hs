@@ -35,8 +35,8 @@ benchmarksToCsv manySets file i = do
     
 createBenchmarkCsv :: Bool -> FilePath -> IO ()
 createBenchmarkCsv manySets filename = do 
-    -- writeFile filename "expression; size; sliced on; concrete slice; concrete size; concrete time (ns) \n"
-    benchmarksToCsv manySets filename 47
+    writeFile filename "expression; size; sliced on; concrete slice; concrete size; concrete time (ns) \n"
+    benchmarksToCsv manySets filename 100
 
 updateBenchmarkCsv :: FilePath -> IO ()
 updateBenchmarkCsv filename = do 

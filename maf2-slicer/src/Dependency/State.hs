@@ -39,7 +39,6 @@ xCovering x s = fmap Map.fromList (filter (not . null) $ sequence $ groupBy (\ a
 
 refineByProp :: Property -> V -> [V]
 refineByProp PAll v  = refine v 
-refineByProp PReal v = [v { real = r }    | r <- refine $ real v]
 refineByProp PInt v  = [v { integer = i } | i <- refine $ integer v]
 refineByProp PBool v = [v { boolean = b } | b <- refine $ boolean v]
 

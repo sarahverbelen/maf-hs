@@ -339,10 +339,10 @@ instance (Ord exp, Ord i, Ord b, Ord c, Ord r, RealDomain r, IntDomain i, CharDo
 
 ---
 
-instance (Ord exp, Ord i, Ord b, Ord c, Ord r, RealDomain r, IntDomain i, CharDomain c, BoolDomain b, TopLattice r, TopLattice i, TopLattice c, TopLattice b, Address pai, Address vec, Address str, Ord env, Show env) =>
+instance (Ord exp, Ord i, Ord b, Ord c, Ord r, RealDomain r, IntDomain i, CharDomain c, BoolDomain b, TopLattice i, TopLattice c, TopLattice b, Address pai, Address vec, Address str, Ord env, Show env) =>
    TopLattice (ModularSchemeValue r i c b pai vec str var exp env) where
 
-   top = ModularSchemeValue (Just top) (Just top) Nothing (Just top) Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+   top = ModularSchemeValue Nothing (Just top) Nothing (Just top) Nothing Nothing Nothing Nothing Nothing Nothing Nothing
 
 ---
 

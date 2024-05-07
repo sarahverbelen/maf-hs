@@ -64,7 +64,6 @@ genSimpleExp :: Context -> Gen Exp
 genSimpleExp (_, []) = do randNr <- choose (-30, 30); return $ Num randNr NoSpan
 genSimpleExp vs@(defined, initialized) = frequency [
       (3, do randNr <- choose (-30, 30); return $ Num randNr NoSpan),
-      -- (2, do randNr <- choose (-30, 30); return $ Rea randNr NoSpan),
       (2, do ide <- elements initialized; return $ Var ide),
       (2, do (prim, args) <- genPrimitive numPrimitives; ops <- vectorOf args (genSimpleExp vs); return $ App prim ops NoSpan)
       ] 

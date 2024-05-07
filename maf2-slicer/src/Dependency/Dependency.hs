@@ -13,7 +13,6 @@ import qualified Control.Monad.Escape as Escape
 
 atomByProp' :: Property -> V -> Bool 
 atomByProp' PAll  v = atom v
-atomByProp' PReal v = atom $ real v
 atomByProp' PInt  v = atom $ integer v 
 atomByProp' PBool v = atom $ boolean v
 
@@ -27,7 +26,6 @@ type Deps = [(String, Property)]
 atomicExpression' :: Exp -> Property -> AbstractSto V -> Bool 
 atomicExpression' e p sto = (atomByProp p $ abstractEval e sto) 
 
--- possibly infinitely looping versions
 atomicExpression :: Exp -> Property -> AbstractSto V -> Bool 
 -- | holds if the expression has an atomic value, either by direct computation or by case analysis of the coverings
 atomicExpression e p sto = 
@@ -51,15 +49,15 @@ noDep p (x, px) e sto =
                 else and (map (noDep' p e) stos)
     in b || b' 
 
-findNDeps :: Exp -> (Maybe Property) -> AbstractSto V -> Deps 
-findNDeps e (Just p) s = 
-    let vars =  map (\a -> (a, PAll)) $ getVarsFromExp' e 
-        nonDep = prove e s vars p 
-    in vars \\ nonDep
-findNDeps _ Nothing _ = error "no property given to find dependencies"
+-- findNDeps :: Exp -> (Maybe Property) -> AbstractSto V -> Deps 
+-- findNDeps e (Just p) s = 
+--     let vars =  map (\a -> (a, PAll)) $ getVarsFromExp' e 
+--         nonDep = prove e s vars p 
+--     in vars \\ nonDep
+-- findNDeps _ Nothing _ = error "no property given to find dependencies"
 
--- findNDeps :: Exp -> (Maybe Property) -> AbstractSto V -> Deps -- dependencies for a concrete slices
--- findNDeps e _ _ = map (\a -> (a, PAll)) $ getVarsFromExp' e
+findNDeps :: Exp -> (Maybe Property) -> AbstractSto V -> Deps -- dependencies for a concrete slices
+findNDeps e _ _ = map (\a -> (a, PAll)) $ getVarsFromExp' e
 
 prove :: Exp -> AbstractSto V -> [(String, Property)] -> Property -> Deps 
 prove e s xs p = evalState (prove' e s xs p) []

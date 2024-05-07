@@ -33,10 +33,7 @@ instance (AtomicLattice a) => AtomicLattice (Maybe a) where
     atom Nothing = False
 
 instance (AtomicLattice a) => AtomicLattice (CPChar' a) where 
-    atom (CPChar' x) = atom x    
-
-instance (AtomicLattice a) => AtomicLattice (CPDouble' a) where 
-    atom (CPDouble' x) = atom x             
+    atom (CPChar' x) = atom x                
 
 class (TopLattice v) => RefinableLattice v where 
 -- | refine returns a list of all elements that are immediate predecessors   
@@ -59,34 +56,27 @@ instance RefinableLattice Parity where
     refine PTop = [Even, Odd] 
     refine _ = [PBottom]
 
-instance RefinableLattice (CP Double) where 
-    refine Bottom = []
-    refine (Constant _) = [Bottom]
-    refine Top = [Constant i | i <- [-13, -10, -9, -5.5, 0, 5.5, 6, 42, 10, 7, 13]] -- pretend that a double is ""bounded""
-
 instance (RefinableLattice a) => RefinableLattice (Maybe a) where 
     refine (Just x) = [Just a | a <- refine x]
     refine Nothing = []  
 
 instance (RefinableLattice a) => RefinableLattice (CPChar' a) where 
-    refine (CPChar' x) = [CPChar' a | a <- refine x]
-
-instance (RefinableLattice a) => RefinableLattice (CPDouble' a) where 
-    refine (CPDouble' x) = [CPDouble' a | a <- refine x]    
+    refine (CPChar' x) = [CPChar' a | a <- refine x]  
  
 instance (TopLattice a) => TopLattice (Maybe a) where 
     top = Just top 
 
-type V = SignValue () Ide Exp
--- type V = ParityValue () Ide Exp 
+-- type V = SignValue () Ide Exp
+type V = ParityValue () Ide Exp 
+-- type V = CPValue () Ide Exp
 
 instance Address Ide
 instance Address ()
 
-instance (TopLattice (ModularSchemeValue r i c b pai vec str var exp env), RefinableLattice r, RefinableLattice i, RefinableLattice c, RefinableLattice b)
+instance (TopLattice (ModularSchemeValue r i c b pai vec str var exp env), RefinableLattice i, RefinableLattice c, RefinableLattice b)
     => RefinableLattice (ModularSchemeValue r i c b pai vec str var exp env) where
         refine v = [ModularSchemeValue {
-                real = r,
+                real = real v,
                 integer = i,
                 character = character v,
                 boolean = b,
@@ -97,11 +87,11 @@ instance (TopLattice (ModularSchemeValue r i c b pai vec str var exp env), Refin
                 null = null v,
                 unspecified = unspecified v,
                 primitives = primitives v
-        } | r <- refine $ real v, i <- refine $ integer v, b <- refine $ boolean v]
+        } | i <- refine $ integer v, b <- refine $ boolean v]
 
-instance (AtomicLattice r, AtomicLattice i, AtomicLattice b, RealDomain r, IntDomain i, CharDomain c, BoolDomain b, Address pai, Address vec, Address str, Ord env, Ord exp, Show env)
+instance (AtomicLattice i, AtomicLattice b, RealDomain r, IntDomain i, CharDomain c, BoolDomain b, Address pai, Address vec, Address str, Ord env, Ord exp, Show env)
     => AtomicLattice (ModularSchemeValue r i c b pai vec str var exp env) where
-        atom v = (atom $ real v) && (atom $ integer v) && (atom $ boolean v)
+        atom v = (atom $ integer v) && (atom $ boolean v)
 
 
 instance (AtomicLattice a, Joinable e, Eq e) => AtomicLattice (Escape.MayEscape e a) where 
@@ -136,24 +126,16 @@ instance (DummyValue a c) => DummyValue (CP a) c where
 instance DummyValue Bool Bool where 
     dummyValue b = b
 
-instance DummyValue Double Double where 
-    dummyValue b = b
-
-instance DummyValue (CPDouble' i) Double where 
-    dummyValue (CPDouble' v) = dummyValue v
-
 instance (DummyValue a c) => DummyValue (Maybe a) c where 
     dummyValue (Just v) = dummyValue v
     dummyValue Nothing = error "nothing value for dummy"
 
 
-instance (DummyValue r Double, DummyValue i Integer, DummyValue b Bool, RealDomain r, Ord i, Ord r, Ord c, Ord b, IntDomain i, CharDomain c, BoolDomain b, Address pai, Address vec, Address str, Ord env, Ord exp, Show env, Show (ModularSchemeValue r i c b pai vec str var exp env)) 
+instance (DummyValue i Integer, DummyValue b Bool, RealDomain r, Ord i, Ord r, Ord c, Ord b, IntDomain i, CharDomain c, BoolDomain b, Address pai, Address vec, Address str, Ord env, Ord exp, Show env, Show (ModularSchemeValue r i c b pai vec str var exp env)) 
     => DummyValue (ModularSchemeValue r i c b pai vec str var exp env) Exp where
     dummyValue v = 
-        if (real v) /= Nothing
-            then Rea (dummyValue $ real v) NoSpan 
-            else if (integer v) /= Nothing 
-                    then Num (dummyValue $ integer v) NoSpan 
-                    else if (boolean v) /= Nothing 
-                        then Bln (dummyValue $ boolean v) NoSpan 
-                        else Num 6 NoSpan
+        if (integer v) /= Nothing 
+            then Num (dummyValue $ integer v) NoSpan 
+            else if (boolean v) /= Nothing 
+                then Bln (dummyValue $ boolean v) NoSpan 
+                else Num 6 NoSpan
