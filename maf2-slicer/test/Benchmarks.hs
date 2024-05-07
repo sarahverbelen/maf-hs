@@ -35,15 +35,15 @@ benchmarksToCsv manySets file i = do
     
 createBenchmarkCsv :: Bool -> FilePath -> IO ()
 createBenchmarkCsv manySets filename = do 
-    writeFile filename "expression; size; sliced on; concrete slice; concrete size; concrete time (ns) \n"
-    benchmarksToCsv manySets filename 100
+    -- writeFile filename "expression; size; sliced on; sign slice; sign size; sign time (ns) \n"
+    benchmarksToCsv manySets filename 41
 
 updateBenchmarkCsv :: FilePath -> IO ()
 updateBenchmarkCsv filename = do 
     contents <- readFile filename 
     putStrLn contents -- force the contents to be read completely so we can write to the file
     let (h:dataLines) = lines contents
-    let newH = h ++ "; sign slice; sign size; sign time \n"
+    let newH = h ++ "; parity slice; parity size; parity time \n"
     writeFile filename newH 
     mapM_ (updateBenchmark filename) dataLines
     putStrLn $ "done updating " ++ filename 
