@@ -1,12 +1,20 @@
+{-# LANGUAGE NamedFieldPuns, LambdaCase #-}
+
 module Benchmarks where 
 
 import Spec
 
 import Syntax.Scheme
+import Analysis.Scheme.Simple --(runAnalysis)
 
 import Test.QuickCheck   
 import qualified Data.Text as T
 import Data.Maybe (fromJust)
+import Data.List (intercalate)
+import Data.Map (Map)
+import Analysis.Scheme.Store (values)
+import qualified Data.Map as Map
+import Text.Printf
 import System.Clock
 
 encodeData :: Exp -> Int -> Int -> Exp -> Int -> Integer -> String 
@@ -55,8 +63,42 @@ updateBenchmark filename d = do
     let n = read $ splitData !! 2 
     (t, (e', x')) <- timeInNs $ benchmark e n 
     appendFile filename (appendData d e' x' t) 
-    putStrLn $ "updated record after " ++ show t
+    putStrLn $ "updated record after " ++ show t ++ "ns"
 
+runAnalysisTimeBenchmarks :: FilePath -> IO ()
+runAnalysisTimeBenchmarks filename = do 
+    contents <- readFile filename 
+    putStrLn contents -- force the contents to be read completely so we can write to the file 
+    let (h:dataLines) = lines contents 
+    let newH = h ++ "; concrete analysis time \n"
+    writeFile filename newH 
+    mapM_ (benchmarkAnalysisTime filename) dataLines 
+    putStrLn $ "done benchmarking analysis times in " ++ filename
+
+benchmarkAnalysisTime :: FilePath -> String -> IO ()
+benchmarkAnalysisTime filename d = do 
+    let splitData = map T.unpack $ T.splitOn (T.pack ";") (T.pack d)
+    let e = splitData !! 9
+    (t, _) <- timeInNs $ runAnalysisNTimes e 100
+    appendFile filename (d ++ ";" ++ show t ++ "\n")
+    putStrLn $ "analysis took " ++ show t ++ "ns"
+
+runAnalysisNTimes :: String -> Int -> IO ()
+runAnalysisNTimes _ 0 = return ()
+runAnalysisNTimes s n = do 
+    analyze s 
+    runAnalysisNTimes s (n - 1)
+
+
+analyze :: String -> IO ()
+analyze contents = do 
+   putStrLn $ printSto (values (runAnalysis contents))
+
+printSto :: Map VariableAdr V -> String
+printSto m =
+   intercalate "\n" $ map (\(k,v) -> printf "%*s | %s" indent (show k) (show v)) adrs
+   where adrs   = Map.toList $ Map.filterWithKey (\case { Prm _ -> const False ; _ -> const True }) m
+         indent = maximum (map (length . show . fst) adrs) + 5
 
 -- modified from https://hackage.haskell.org/package/timeit-1.0.0.0/docs/src/System-TimeIt.html#timeItT to return time in ns
 timeInNs :: IO a -> IO (Integer, a)
