@@ -9,6 +9,9 @@ import Test.QuickCheck
 
 main :: IO ()
 main = do 
+  testGenSetPerc 20
+  -- sample (resize 100 $ sized genExpSetPercentage)
+  -- sample (resize 100 $ sized genExpSetPercentage)
   -- sample (arbitrary :: Gen Exp)
   -- sample (resize 100 $ sized genExpManySets)
   -- quickCheck (withMaxSuccess 100 prop_preserved_semantics)
@@ -17,5 +20,5 @@ main = do
   -- createBenchmarkCsv True "results/manySets.csv"
   -- updateBenchmarkCsv "results/arbitrary.csv"
   -- updateBenchmarkCsv "results/manySets.csv"
-  runAnalysisTimeBenchmarks "results/arbitrary.csv"
-  runAnalysisTimeBenchmarks "results/manySets.csv"
+  -- runAnalysisTimeBenchmarks "results/arbitrary.csv"
+  -- runAnalysisTimeBenchmarks "results/manySets.csv"

@@ -140,7 +140,7 @@ genLetExp vs@(defined, initialized) n = do
   let' <- oneof $ map return possibleLets
   return $ let' binds body NoSpan 
 
-countSets :: Exp -> Int 
+countSets :: Exp -> Integer 
 countSets (Iff b c a _) = countSets b + countSets c + countSets a
 countSets (Bgn es _) = foldr (\ a b -> b + countSets a) 0 es 
 countSets (Dfv _ e _) = countSets e 
@@ -154,7 +154,7 @@ countSets (App op ops _) = countSets op + foldr (\ a b -> b + countSets a) 0 ops
 countSets _ = 0
 
 -- count the amount of AST nodes
-nodeCount :: Exp -> Int
+nodeCount :: Exp -> Integer
 nodeCount (Iff b c a _) = 1 + nodeCount b + nodeCount c + nodeCount a
 nodeCount (Bgn es _) = 1 + foldr (\ a b -> b + nodeCount a) 0 es 
 nodeCount (Dfv _ e _) = 1 + nodeCount e 
@@ -169,6 +169,20 @@ nodeCount _ = 1
 
 genExpManySets :: Int -> Gen Exp 
 genExpManySets i = ((genLetExp ([], []) i) `suchThat` (\e -> countSets e > 5)) `suchThat` (\e -> nodeCount e < 150)
+
+genExpSetPercentage :: Double -> Int -> Gen Exp -- generate an exp with size i and between n% and (n+1)% set!s
+genExpSetPercentage n i = (genLetExp ([], []) i) `suchThat` (\e -> (setPercentage e >= n) && (setPercentage e < n + 1))
+
+setPercentage :: Exp -> Double
+setPercentage e = ((fromInteger (countSets e)) / (fromInteger (nodeCount e)) * 100)
+
+testGenSetPerc :: Int -> IO ()
+testGenSetPerc 0 = return ()
+testGenSetPerc i = do 
+  e <- generate (genExpSetPercentage 0 100)
+  putStrLn $ show e 
+  putStrLn $ show (setPercentage e)
+  testGenSetPerc (i - 1)
 
 instance Arbitrary Ide where 
   arbitrary = do

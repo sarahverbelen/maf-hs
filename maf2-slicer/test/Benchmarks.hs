@@ -17,13 +17,13 @@ import qualified Data.Map as Map
 import Text.Printf
 import System.Clock
 
-encodeData :: Exp -> Int -> Int -> Exp -> Int -> Integer -> String 
+encodeData :: Exp -> Integer -> Int -> Exp -> Integer -> Integer -> String 
 encodeData e x v e' x' t = show e ++ ";" ++ show x ++ ";" ++ show v ++ ";" ++ show e' ++ ";" ++ show x' ++ ";" ++ show t ++ "\n"
 
-appendData :: String -> Exp -> Int -> Integer -> String
+appendData :: String -> Exp -> Integer -> Integer -> String
 appendData s e i t = s ++ ";" ++ show e ++ ";" ++ show i ++ ";" ++ show t ++ "\n"
 
-benchmark :: Exp -> Int -> IO (Exp, Int) 
+benchmark :: Exp -> Int -> IO (Exp, Integer) 
 benchmark e n = do
     let var = testVar n e 
     let e' = concreteTestSlice n e 
