@@ -19,6 +19,6 @@ main = do
   -- createBenchmarkCsv False "results/arbitrary.csv"
   -- createBenchmarkCsv True "results/forcedSets.csv"
   -- updateBenchmarkCsv "results/arbitrary.csv"
-  updateBenchmarkCsv "results/forcedSets.csv"
+  -- updateBenchmarkCsv "results/forcedSets.csv"
   -- runAnalysisTimeBenchmarks "results/arbitrary.csv"
-  -- runAnalysisTimeBenchmarks "results/manySets.csv"
+  runAnalysisTimeBenchmarks "results/forcedSets.csv"
