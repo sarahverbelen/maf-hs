@@ -17,8 +17,8 @@ main = do
   -- quickCheck (withMaxSuccess 100 prop_preserved_semantics)
   -- quickCheck (withMaxSuccess 100 prop_preserved_semantics_concrete)
   -- createBenchmarkCsv False "results/arbitrary.csv"
-  createBenchmarkCsv True "results/forcedSets.csv"
+  -- createBenchmarkCsv True "results/forcedSets.csv"
   -- updateBenchmarkCsv "results/arbitrary.csv"
-  -- updateBenchmarkCsv "results/manySets.csv"
+  updateBenchmarkCsv "results/forcedSets.csv"
   -- runAnalysisTimeBenchmarks "results/arbitrary.csv"
   -- runAnalysisTimeBenchmarks "results/manySets.csv"

@@ -26,7 +26,8 @@ appendData s e i t = s ++ ";" ++ show e ++ ";" ++ show i ++ ";" ++ show t ++ "\n
 benchmark :: Exp -> Int -> IO (Exp, Integer) 
 benchmark e n = do
     let var = testVar n e 
-    let e' = concreteTestSlice n e 
+    -- let e' = concreteTestSlice n e 
+    let e' = testSlice n e 
     let x = nodeCount e' 
     return (e', x)
 
@@ -43,15 +44,15 @@ benchmarksToCsv manySets file i = do
     
 createBenchmarkCsv :: Bool -> FilePath -> IO ()
 createBenchmarkCsv manySets filename = do 
-    -- writeFile filename "expression; %set!s; size; sliced on; sign slice; sign size; sign time (ns) \n"
-    benchmarksToCsv manySets filename 24
+    writeFile filename "expression; %set!s; size; sliced on; sign slice; sign size; sign time (ns) \n"
+    benchmarksToCsv manySets filename 1000
 
 updateBenchmarkCsv :: FilePath -> IO ()
 updateBenchmarkCsv filename = do 
     contents <- readFile filename 
     putStrLn contents -- force the contents to be read completely so we can write to the file
     let (h:dataLines) = lines contents
-    let newH = h ++ "; concrete slice; concrete size; concrete time \n"
+    let newH = h ++ "; sign slice; sign size; sign time \n"
     writeFile filename newH 
     mapM_ (updateBenchmark filename) dataLines
     putStrLn $ "done updating " ++ filename 
