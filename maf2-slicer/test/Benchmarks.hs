@@ -71,7 +71,7 @@ runAnalysisTimeBenchmarks filename = do
     contents <- readFile filename 
     putStrLn contents -- force the contents to be read completely so we can write to the file 
     let (h:dataLines) = lines contents 
-    let newH = h ++ "; abstract analysis time \n"
+    let newH = h ++ "; concrete analysis time \n"
     writeFile filename newH 
     mapM_ (benchmarkAnalysisTime filename) dataLines 
     putStrLn $ "done benchmarking analysis times in " ++ filename
@@ -79,7 +79,7 @@ runAnalysisTimeBenchmarks filename = do
 benchmarkAnalysisTime :: FilePath -> String -> IO ()
 benchmarkAnalysisTime filename d = do 
     let splitData = map T.unpack $ T.splitOn (T.pack ";") (T.pack d)
-    let e = splitData !! 6
+    let e = splitData !! 8
     (t, _) <- timeInNs $ runAnalysisNTimes e 100
     appendFile filename (d ++ ";" ++ show t ++ "\n")
     putStrLn $ "analysis took " ++ show t ++ "ns"
