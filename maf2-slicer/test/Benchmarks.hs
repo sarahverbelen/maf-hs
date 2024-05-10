@@ -18,7 +18,7 @@ import Text.Printf
 import System.Clock
 
 encodeData :: Exp -> Integer -> Int -> Exp -> Integer -> Integer -> String 
-encodeData e x v e' x' t = show e ++ ";" ++ show x ++ ";" ++ show v ++ ";" ++ show e' ++ ";" ++ show x' ++ ";" ++ show t ++ "\n"
+encodeData e x v e' x' t = show e ++ ";" ++ show (setPercentage e) ++ ";" ++ show x ++ ";" ++ show v ++ ";" ++ show e' ++ ";" ++ show x' ++ ";" ++ show t ++ "\n"
 
 appendData :: String -> Exp -> Integer -> Integer -> String
 appendData s e i t = s ++ ";" ++ show e ++ ";" ++ show i ++ ";" ++ show t ++ "\n"
@@ -33,7 +33,7 @@ benchmark e n = do
 benchmarksToCsv :: Bool -> String -> Int -> IO ()
 benchmarksToCsv _ file 0 = putStrLn $ file ++ " done"
 benchmarksToCsv manySets file i = do 
-    e <- generate (if manySets then resize 100 $ sized genExpManySets else (arbitrary :: Gen Exp))
+    e <- generate (if manySets then genExpSetPercentage 20 100 else (arbitrary :: Gen Exp))
     n <- generate (arbitrary :: Gen Int)
     (t, (e', x')) <- timeInNs $ benchmark e n
     let x = nodeCount e 
@@ -43,8 +43,8 @@ benchmarksToCsv manySets file i = do
     
 createBenchmarkCsv :: Bool -> FilePath -> IO ()
 createBenchmarkCsv manySets filename = do 
-    -- writeFile filename "expression; size; sliced on; sign slice; sign size; sign time (ns) \n"
-    benchmarksToCsv manySets filename 41
+    -- writeFile filename "expression; %set!s; size; sliced on; sign slice; sign size; sign time (ns) \n"
+    benchmarksToCsv manySets filename 24
 
 updateBenchmarkCsv :: FilePath -> IO ()
 updateBenchmarkCsv filename = do 

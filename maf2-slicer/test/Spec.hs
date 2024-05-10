@@ -170,16 +170,16 @@ nodeCount _ = 1
 genExpManySets :: Int -> Gen Exp 
 genExpManySets i = ((genLetExp ([], []) i) `suchThat` (\e -> countSets e > 5)) `suchThat` (\e -> nodeCount e < 150)
 
-genExpSetPercentage :: Double -> Int -> Gen Exp -- generate an exp with size i and between n% and (n+1)% set!s
-genExpSetPercentage n i = (genLetExp ([], []) i) `suchThat` (\e -> (setPercentage e >= n) && (setPercentage e < n + 1))
+genExpSetPercentage :: Int -> Int -> Gen Exp -- generate an exp with size i and n% set!s
+genExpSetPercentage n i = ((genLetExp ([], []) i) `suchThat` (\e -> setPercentage e == n)) `suchThat` (\e -> nodeCount e < 150)
 
-setPercentage :: Exp -> Double
-setPercentage e = ((fromInteger (countSets e)) / (fromInteger (nodeCount e)) * 100)
+setPercentage :: Exp -> Int
+setPercentage e = floor ((fromInteger (countSets e)) / (fromInteger (nodeCount e)) * 100)
 
 testGenSetPerc :: Int -> IO ()
 testGenSetPerc 0 = return ()
 testGenSetPerc i = do 
-  e <- generate (genExpSetPercentage 0 100)
+  e <- generate (genExpSetPercentage 23 100)
   putStrLn $ show e 
   putStrLn $ show (setPercentage e)
   testGenSetPerc (i - 1)
