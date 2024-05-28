@@ -75,22 +75,10 @@ wilcox.test(forcedSets$sign.size, forcedSets$parity.size, paired = TRUE) # signi
 wilcox.test(forcedSets$sign.size, forcedSets$concrete.size, paired = TRUE) # significant
 
 # size difference boxplot
-# START PLOT
-svg("size.svg")
-boxplot(forcedSets$sign.diff, forcedSets$parity.diff, forcedSets$concrete.diff, names=c("Sign", "Parity", "Concrete"), xlab="Domain of slice", ylab="Slice size (% of original program)", main="Size After Slicing", col=c("darkviolet", "hotpink", "cyan3"), axes=FALSE)
-axis(1, at = c(1, 2, 3), labels = c("Sign", "Parity", "Concrete"), lwd=0)
-axis(2, at = pretty(forcedSets$concrete.diff), labels = paste0(pretty(forcedSets$concrete.diff) * 100, "%"))
-dev.off()
-# END PLOT
+boxplot(forcedSets$sign.diff, forcedSets$parity.diff, forcedSets$concrete.diff, names=c("sign", "parity", "concrete"), xlab="Kind of slice", ylab="% of original size", main="Size after slicing")
 
 # time boxplot
-# START PLOT
-svg("time.svg")
-boxplot(forcedSets$concrete.time.diff, forcedSets$abstract.time.diff, names=c("Concrete slice", "Abstract slice"), xlab="Domain of slice", ylab="Analysis time (% of original time)", main="Analysis Time After Slicing (Parity Analysis)", col=c("cyan3", "hotpink"), axes=FALSE)
-axis(1, at = c(1, 2), labels = c("Concrete slice", "Abstract slice"), lwd=0)
-axis(2, at = pretty(forcedSets$concrete.time.diff), labels = paste0(pretty(forcedSets$concrete.time.diff) * 100, "%"))
-dev.off()
-# END PLOT
+boxplot(forcedSets$concrete.time.diff, forcedSets$abstract.time.diff, names=c("concrete slice", "abstract slice"), xlab="Kind of slice", ylab="analysis time (% of original time)", main="Analysis time per kind of slice (parity analysis)")
 
 # test significant difference in time 
 wilcox.test(forcedSets$concrete.time.diff, forcedSets$abstract.time.diff, paired = TRUE, alternative = "g") # significant
@@ -119,57 +107,19 @@ exp(mean(log(forcedSets$abstract.time.diff))) # 0.3101495
 groupedSignSize <- aggregate(forcedSets$sign.diff, list(forcedSets$sets), FUN=geometric_mean) 
 plot(groupedSignSize, xlab="% of set!s", ylab="slice size (% of original)", main="Slice size vs % of set!s (sign slice)")
 
-groupedParitySize <- aggregate(forcedSets$parity.diff, list(forcedSets$sets), FUN=geometric_mean) 
-
 groupedConcreteSize <- aggregate(forcedSets$concrete.diff, list(forcedSets$sets), FUN=geometric_mean) 
+plot(groupedConcreteSize, xlab="% of set!s", ylab="slice size (% of original)", main="Slice size vs % of set!s (concrete slice)")
 
-# START PLOT
-svg("sizevssets.svg")
-plot(groupedConcreteSize, xlab="% of set!s in original program", ylab="Slice size (% of original program)", main="Influence of Percentage of Set!-nodes on Slice Size", col="cyan3", pch=19, axes=FALSE, xaxs="i", xlim=c(0, 20.5))
-axis(1, at = pretty(groupedConcreteSize$Group.1), labels = paste0(pretty(groupedConcreteSize$Group.1), "%"))
-axis(2, at = pretty(groupedConcreteSize$x), labels = paste0(pretty(groupedConcreteSize$x) * 100, "%"))
-
-points(groupedSignSize, col="darkviolet", pch=19)
-points(groupedParitySize, col="hotpink", pch=19)
-
-cmodel <- lm (groupedConcreteSize$x ~ groupedConcreteSize$Group.1)
-smodel <- lm (groupedSignSize$x ~ groupedSignSize$Group.1)
-pmodel <- lm (groupedParitySize$x ~ groupedParitySize$Group.1)
-
-abline(cmodel, col="cyan3", lwd=2)
-abline(smodel, col="darkviolet", lwd=2)
-abline(pmodel, col="hotpink", lwd=2)
-legend("topleft", legend=c("Concrete", "Sign", "Parity"), col=c("cyan3", "darkviolet", "hotpink"), pch = 16, lty = 1, lwd = 2, title="Slice domain")
-dev.off()
-# END PLOT
-
-# START PLOT
-svg("timevssets.svg")
 groupedConcreteTime <- aggregate(forcedSets$concrete.time.diff, list(forcedSets$sets), FUN=geometric_mean) 
+plot(groupedConcreteTime, xlab="% of set!s", ylab="analysis time (% of original)", main="Analysis time vs % of set!s (concrete slice)")
+
 groupedAbstractTime <- aggregate(forcedSets$abstract.time.diff, list(forcedSets$sets), FUN=geometric_mean) 
-
-plot(groupedConcreteTime, xlab="% of set!s in original program", ylab="Analysis time (% of original time)", main="Influence of Percentage of Set!-nodes on Analysis Time", col="cyan3", pch=19, axes=FALSE, xaxs="i", xlim=c(0, 20.5))
-points(groupedAbstractTime, col="hotpink", pch=19)
-axis(1, at = pretty(groupedConcreteTime$Group.1), labels = paste0(pretty(groupedConcreteTime$Group.1), "%"))
-axis(2, at = pretty(groupedConcreteTime$x), labels = paste0(pretty(groupedConcreteTime$x) * 100, "%"))
-
-cmodel <- lm (groupedConcreteTime$x ~ groupedConcreteTime$Group.1)
-amodel <- lm (groupedAbstractTime$x ~ groupedAbstractTime$Group.1)
-
-abline(cmodel, col="cyan3", lwd=2)
-abline(amodel, col="hotpink", lwd=2)
-legend("topleft", legend=c("Concrete", "Parity"), col=c("cyan3", "hotpink"), pch = 16, lty = 1, lwd = 2, title="Slice domain")
-dev.off()
-# END PLOT
-
 plot(groupedAbstractTime, xlab="% of set!s", ylab="analysis time (% of original)", main="Analysis time vs % of set!s (abstract slice)")
 
 geometric_mean <- function(x){
   exp(mean(log(x))) 
 }
 
-col=c("darkviolet", "hotpink", "cyan3")
-legend=c("Sign", "Parity", "Concrete")
 
 # find out at what percentage the difference becomes meaningful
 forcedSetsReduced <- forcedSets[forcedSets$sets == 5, ]

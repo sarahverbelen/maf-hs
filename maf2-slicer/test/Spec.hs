@@ -226,6 +226,27 @@ prop_preserved_semantics i p =
   in if (null vsInExp) then True else v1 == v2 
 
 
+prop_preserved_semantics_multiple :: [Int] -> Exp -> Bool 
+prop_preserved_semantics_multiple is p = 
+  let e = fromJust $ parseString $ show p
+      vsInExp = getVarsFromExp' e
+      vars = map (\i -> vsInExp !! (i `mod` length vsInExp)) is
+      criterion = [(var, PAll) | var <- vars]
+      e' = slice e criterion
+      s = mempty
+      (_, s1) = abstractEval' e s
+      (_, s2) = abstractEval' e' s
+      b = compareVals vars s1 s2
+  in if (null vsInExp) then True else b
+
+
+--compareVals :: [String] -> AbstractSto V -> AbstractSto V -> Bool 
+compareVals [] _ _ = True 
+compareVals (var:vars) s1 s2 = let 
+  v1 = Map.lookup var s1 
+  v2 = Map.lookup var s2
+  in (v1 == v2) && compareVals vars s1 s2
+
 prop_preserved_semantics_concrete :: Int -> Exp -> Bool 
 prop_preserved_semantics_concrete i p = 
   let e = fromJust $ parseString $ show p
